@@ -143,3 +143,11 @@ def test_precedent_tool_and_mcp(client):
     assert not call["isError"] and "REAL, PUBLIC, PAST" in call["content"][0]["text"]
     bad = client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "precedent_lookup", "arguments": {"case_id": "nope"}}}).json()["result"]
     assert bad["isError"]
+
+
+def test_verdict_variants_all_match():
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "evals"))
+    import verdict_variants as V
+    res, err = V.run()
+    assert err is None and res and all(r["ok"] for r in res), [r for r in res if not r["ok"]]

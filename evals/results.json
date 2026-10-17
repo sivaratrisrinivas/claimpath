@@ -1,0 +1,980 @@
+{
+ "dev_before_fix": {
+  "clause": {
+   "IN": {
+    "n": 36,
+    "clause_acc": 0.806,
+    "clause_ci": [
+     0.65,
+     0.902
+    ],
+    "rule_acc": 0.833,
+    "rule_ci": [
+     0.681,
+     0.921
+    ],
+    "per_class": {
+     "IN-3.1": {
+      "support": 5,
+      "precision": 0.5,
+      "recall": 0.6,
+      "tp": 3,
+      "fp": 3,
+      "fn": 2
+     },
+     "IN-4.1": {
+      "support": 16,
+      "precision": 0.778,
+      "recall": 0.875,
+      "tp": 14,
+      "fp": 4,
+      "fn": 2
+     },
+     "IN-7.2": {
+      "support": 11,
+      "precision": 1.0,
+      "recall": 0.909,
+      "tp": 10,
+      "fp": 0,
+      "fn": 1
+     },
+     "IN-9.1": {
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0
+     },
+     "NONE": {
+      "support": 2,
+      "precision": null,
+      "recall": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-IN-B12-11-002-0256-10",
+      "true": "IN-7.2",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B12-11-02-0403-10",
+      "true": "IN-4.1",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-002-0019-11",
+      "true": "NONE",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-002-0066-11",
+      "true": "IN-3.1",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-002-0195-11",
+      "true": "IN-3.1",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-003-0419-11",
+      "true": "NONE",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B17-11-005-0637-12",
+      "true": "IN-4.1",
+      "pred": "IN-3.1"
+     }
+    ],
+    "confusion": {
+     "IN-7.2->IN-4.1": 1,
+     "IN-4.1->IN-3.1": 2,
+     "NONE->IN-3.1": 1,
+     "IN-3.1->IN-4.1": 2,
+     "NONE->IN-4.1": 1
+    }
+   },
+   "US": {
+    "n": 36,
+    "clause_acc": 0.972,
+    "clause_ci": [
+     0.858,
+     0.995
+    ],
+    "rule_acc": 0.972,
+    "rule_ci": [
+     0.858,
+     0.995
+    ],
+    "per_class": {
+     "US-3.5": {
+      "support": 28,
+      "precision": 1.0,
+      "recall": 0.964,
+      "tp": 27,
+      "fp": 0,
+      "fn": 1
+     },
+     "US-9.4": {
+      "support": 8,
+      "precision": 0.889,
+      "recall": 1.0,
+      "tp": 8,
+      "fp": 1,
+      "fn": 0
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-US-MN24-43162",
+      "true": "US-3.5",
+      "pred": "US-9.4"
+     }
+    ],
+    "confusion": {
+     "US-3.5->US-9.4": 1
+    }
+   },
+   "ALL": {
+    "n": 72,
+    "clause_acc": 0.889,
+    "clause_ci": [
+     0.796,
+     0.943
+    ],
+    "rule_acc": 0.903,
+    "rule_ci": [
+     0.813,
+     0.952
+    ],
+    "per_class": {
+     "IN-3.1": {
+      "support": 5,
+      "precision": 0.5,
+      "recall": 0.6,
+      "tp": 3,
+      "fp": 3,
+      "fn": 2
+     },
+     "IN-4.1": {
+      "support": 16,
+      "precision": 0.778,
+      "recall": 0.875,
+      "tp": 14,
+      "fp": 4,
+      "fn": 2
+     },
+     "IN-7.2": {
+      "support": 11,
+      "precision": 1.0,
+      "recall": 0.909,
+      "tp": 10,
+      "fp": 0,
+      "fn": 1
+     },
+     "IN-9.1": {
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0
+     },
+     "NONE": {
+      "support": 2,
+      "precision": null,
+      "recall": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+     },
+     "US-3.5": {
+      "support": 28,
+      "precision": 1.0,
+      "recall": 0.964,
+      "tp": 27,
+      "fp": 0,
+      "fn": 1
+     },
+     "US-9.4": {
+      "support": 8,
+      "precision": 0.889,
+      "recall": 1.0,
+      "tp": 8,
+      "fp": 1,
+      "fn": 0
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-IN-B12-11-002-0256-10",
+      "true": "IN-7.2",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B12-11-02-0403-10",
+      "true": "IN-4.1",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-002-0019-11",
+      "true": "NONE",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-002-0066-11",
+      "true": "IN-3.1",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-002-0195-11",
+      "true": "IN-3.1",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-003-0419-11",
+      "true": "NONE",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B17-11-005-0637-12",
+      "true": "IN-4.1",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-US-MN24-43162",
+      "true": "US-3.5",
+      "pred": "US-9.4"
+     }
+    ],
+    "confusion": {
+     "IN-7.2->IN-4.1": 1,
+     "IN-4.1->IN-3.1": 2,
+     "NONE->IN-3.1": 1,
+     "IN-3.1->IN-4.1": 2,
+     "NONE->IN-4.1": 1,
+     "US-3.5->US-9.4": 1
+    }
+   }
+  },
+  "outcome": {
+   "n_all": 36,
+   "n_clear": 36,
+   "unclear_labelled": 0,
+   "accuracy": 0.75,
+   "ci": [
+    0.589,
+    0.862
+   ],
+   "TPR_claimant": 0.632,
+   "TNR_insurer": 0.882,
+   "tp": 12,
+   "fn": 7,
+   "tn": 15,
+   "fp": 2,
+   "errors": [
+    {
+     "id": "PRC-IN-B13-11-002-0066-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B13-11-002-0101-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B13-11-002-0153-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B13-11-002-0195-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B13-11-002-0217-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B13-11-002-0276-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B13-11-003-0419-11",
+     "true": "INSURER",
+     "pred": "complainant succeeded (in whole or part)"
+    },
+    {
+     "id": "PRC-IN-B13-11-004-0174-11",
+     "true": "CLAIMANT",
+     "pred": "insurer's decision upheld"
+    },
+    {
+     "id": "PRC-IN-B14-11-002-0748",
+     "true": "INSURER",
+     "pred": "complainant succeeded (in whole or part)"
+    }
+   ],
+   "unclear_forced": []
+  }
+ },
+ "dev_after_fix": {
+  "clause": {
+   "IN": {
+    "n": 36,
+    "clause_acc": 0.889,
+    "clause_ci": [
+     0.747,
+     0.956
+    ],
+    "rule_acc": 0.889,
+    "rule_ci": [
+     0.747,
+     0.956
+    ],
+    "per_class": {
+     "IN-3.1": {
+      "support": 5,
+      "precision": 0.833,
+      "recall": 1.0,
+      "tp": 5,
+      "fp": 1,
+      "fn": 0
+     },
+     "IN-4.1": {
+      "support": 16,
+      "precision": 0.875,
+      "recall": 0.875,
+      "tp": 14,
+      "fp": 2,
+      "fn": 2
+     },
+     "IN-7.2": {
+      "support": 11,
+      "precision": 1.0,
+      "recall": 0.909,
+      "tp": 10,
+      "fp": 0,
+      "fn": 1
+     },
+     "IN-9.1": {
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0
+     },
+     "NONE": {
+      "support": 2,
+      "precision": 0.5,
+      "recall": 0.5,
+      "tp": 1,
+      "fp": 1,
+      "fn": 1
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-IN-B12-11-002-0256-10",
+      "true": "IN-7.2",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B12-11-02-0403-10",
+      "true": "IN-4.1",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-003-0419-11",
+      "true": "NONE",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B17-11-005-0637-12",
+      "true": "IN-4.1",
+      "pred": "NONE"
+     }
+    ],
+    "confusion": {
+     "IN-7.2->IN-4.1": 1,
+     "IN-4.1->IN-3.1": 1,
+     "NONE->IN-4.1": 1,
+     "IN-4.1->NONE": 1
+    }
+   },
+   "US": {
+    "n": 36,
+    "clause_acc": 1.0,
+    "clause_ci": [
+     0.904,
+     1.0
+    ],
+    "rule_acc": 1.0,
+    "rule_ci": [
+     0.904,
+     1.0
+    ],
+    "per_class": {
+     "US-3.5": {
+      "support": 28,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 28,
+      "fp": 0,
+      "fn": 0
+     },
+     "US-9.4": {
+      "support": 8,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 8,
+      "fp": 0,
+      "fn": 0
+     }
+    },
+    "errors": [],
+    "confusion": {}
+   },
+   "ALL": {
+    "n": 72,
+    "clause_acc": 0.944,
+    "clause_ci": [
+     0.866,
+     0.978
+    ],
+    "rule_acc": 0.944,
+    "rule_ci": [
+     0.866,
+     0.978
+    ],
+    "per_class": {
+     "IN-3.1": {
+      "support": 5,
+      "precision": 0.833,
+      "recall": 1.0,
+      "tp": 5,
+      "fp": 1,
+      "fn": 0
+     },
+     "IN-4.1": {
+      "support": 16,
+      "precision": 0.875,
+      "recall": 0.875,
+      "tp": 14,
+      "fp": 2,
+      "fn": 2
+     },
+     "IN-7.2": {
+      "support": 11,
+      "precision": 1.0,
+      "recall": 0.909,
+      "tp": 10,
+      "fp": 0,
+      "fn": 1
+     },
+     "IN-9.1": {
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0
+     },
+     "NONE": {
+      "support": 2,
+      "precision": 0.5,
+      "recall": 0.5,
+      "tp": 1,
+      "fp": 1,
+      "fn": 1
+     },
+     "US-3.5": {
+      "support": 28,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 28,
+      "fp": 0,
+      "fn": 0
+     },
+     "US-9.4": {
+      "support": 8,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 8,
+      "fp": 0,
+      "fn": 0
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-IN-B12-11-002-0256-10",
+      "true": "IN-7.2",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B12-11-02-0403-10",
+      "true": "IN-4.1",
+      "pred": "IN-3.1"
+     },
+     {
+      "id": "PRC-IN-B13-11-003-0419-11",
+      "true": "NONE",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B17-11-005-0637-12",
+      "true": "IN-4.1",
+      "pred": "NONE"
+     }
+    ],
+    "confusion": {
+     "IN-7.2->IN-4.1": 1,
+     "IN-4.1->IN-3.1": 1,
+     "NONE->IN-4.1": 1,
+     "IN-4.1->NONE": 1
+    }
+   }
+  },
+  "outcome": {
+   "n_all": 36,
+   "n_clear": 36,
+   "unclear_labelled": 0,
+   "accuracy": 1.0,
+   "ci": [
+    0.904,
+    1.0
+   ],
+   "TPR_claimant": 1.0,
+   "TNR_insurer": 1.0,
+   "tp": 19,
+   "fn": 0,
+   "tn": 17,
+   "fp": 0,
+   "errors": [],
+   "unclear_forced": []
+  }
+ },
+ "heldout_after_fix": {
+  "clause": {
+   "IN": {
+    "n": 22,
+    "clause_acc": 0.909,
+    "clause_ci": [
+     0.722,
+     0.975
+    ],
+    "rule_acc": 0.909,
+    "rule_ci": [
+     0.722,
+     0.975
+    ],
+    "per_class": {
+     "IN-3.1": {
+      "support": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0
+     },
+     "IN-4.1": {
+      "support": 10,
+      "precision": 0.833,
+      "recall": 1.0,
+      "tp": 10,
+      "fp": 2,
+      "fn": 0
+     },
+     "IN-7.2": {
+      "support": 7,
+      "precision": 1.0,
+      "recall": 0.857,
+      "tp": 6,
+      "fp": 0,
+      "fn": 1
+     },
+     "IN-9.1": {
+      "support": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0
+     },
+     "NONE": {
+      "support": 1,
+      "precision": null,
+      "recall": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-IN-B13-11-005-0274-11",
+      "true": "NONE",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B17-11-003-0723-12",
+      "true": "IN-7.2",
+      "pred": "IN-4.1"
+     }
+    ],
+    "confusion": {
+     "NONE->IN-4.1": 1,
+     "IN-7.2->IN-4.1": 1
+    }
+   },
+   "US": {
+    "n": 24,
+    "clause_acc": 1.0,
+    "clause_ci": [
+     0.862,
+     1.0
+    ],
+    "rule_acc": 1.0,
+    "rule_ci": [
+     0.862,
+     1.0
+    ],
+    "per_class": {
+     "US-3.5": {
+      "support": 18,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 18,
+      "fp": 0,
+      "fn": 0
+     },
+     "US-9.4": {
+      "support": 6,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0
+     }
+    },
+    "errors": [],
+    "confusion": {}
+   },
+   "ALL": {
+    "n": 46,
+    "clause_acc": 0.957,
+    "clause_ci": [
+     0.855,
+     0.988
+    ],
+    "rule_acc": 0.957,
+    "rule_ci": [
+     0.855,
+     0.988
+    ],
+    "per_class": {
+     "IN-3.1": {
+      "support": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0
+     },
+     "IN-4.1": {
+      "support": 10,
+      "precision": 0.833,
+      "recall": 1.0,
+      "tp": 10,
+      "fp": 2,
+      "fn": 0
+     },
+     "IN-7.2": {
+      "support": 7,
+      "precision": 1.0,
+      "recall": 0.857,
+      "tp": 6,
+      "fp": 0,
+      "fn": 1
+     },
+     "IN-9.1": {
+      "support": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0
+     },
+     "NONE": {
+      "support": 1,
+      "precision": null,
+      "recall": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+     },
+     "US-3.5": {
+      "support": 18,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 18,
+      "fp": 0,
+      "fn": 0
+     },
+     "US-9.4": {
+      "support": 6,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0
+     }
+    },
+    "errors": [
+     {
+      "id": "PRC-IN-B13-11-005-0274-11",
+      "true": "NONE",
+      "pred": "IN-4.1"
+     },
+     {
+      "id": "PRC-IN-B17-11-003-0723-12",
+      "true": "IN-7.2",
+      "pred": "IN-4.1"
+     }
+    ],
+    "confusion": {
+     "NONE->IN-4.1": 1,
+     "IN-7.2->IN-4.1": 1
+    }
+   }
+  },
+  "outcome": {
+   "n_all": 22,
+   "n_clear": 20,
+   "unclear_labelled": 2,
+   "accuracy": 0.95,
+   "ci": [
+    0.764,
+    0.991
+   ],
+   "TPR_claimant": 0.889,
+   "TNR_insurer": 1.0,
+   "tp": 8,
+   "fn": 1,
+   "tn": 11,
+   "fp": 0,
+   "errors": [
+    {
+     "id": "PRC-IN-B13-11-002-0124-11",
+     "true": "CLAIMANT",
+     "pred": null
+    }
+   ],
+   "unclear_forced": [
+    {
+     "id": "PRC-IN-B17-1-002-0679-12",
+     "pred": "complainant succeeded (in whole or part)"
+    },
+    {
+     "id": "PRC-IN-B17-11-009-0733-12",
+     "pred": "complainant succeeded (in whole or part)"
+    }
+   ]
+  }
+ },
+ "verdicts": {
+  "error": null,
+  "rows": [
+   {
+    "id": "V01",
+    "case": "IN-01",
+    "assume": [],
+    "text": "",
+    "expected": "undecidable",
+    "got": "undecidable",
+    "ok": true,
+    "basis": "43 months of cover < 60-month moratorium; earlier ported cover unproven -> cannot decide (IRDAI MC 2024)"
+   },
+   {
+    "id": "V02",
+    "case": "IN-01",
+    "assume": [
+     "prior_cover_start"
+    ],
+    "text": "",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "with proof of cover since 2018-04-01 = 100 months >= 60"
+   },
+   {
+    "id": "V03",
+    "case": "US-01",
+    "assume": [],
+    "text": "",
+    "expected": "undecidable",
+    "got": "undecidable",
+    "ok": true,
+    "basis": "45 CFR 149.110: emergency services need no prior auth, but no record shows the CT was ordered in the ED"
+   },
+   {
+    "id": "V04",
+    "case": "US-01",
+    "assume": [
+     "ed_encounter_record"
+    ],
+    "text": "",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "ED record shows CT ordered in the emergency department"
+   },
+   {
+    "id": "V05",
+    "case": "IN-01",
+    "assume": [],
+    "text": "",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "cover since 2019-01-15 = 91 months >= 60"
+   },
+   {
+    "id": "V06",
+    "case": "IN-01",
+    "assume": [],
+    "text": "",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "exactly 60 complete months at claim date 2026-08-12 meets 'after 60 months'"
+   },
+   {
+    "id": "V07",
+    "case": "IN-01",
+    "assume": [],
+    "text": "",
+    "expected": "undecidable",
+    "got": "undecidable",
+    "ok": true,
+    "basis": "59 months 30 days < 60 and prior cover unproven"
+   },
+   {
+    "id": "V08",
+    "case": "IN-01",
+    "assume": [],
+    "text": "Claim repudiated: pre-existing disease u",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "PED clause: waiting period capped at 36 months; 43 months of cover > 36"
+   },
+   {
+    "id": "V09",
+    "case": "IN-01",
+    "assume": [],
+    "text": "Claim repudiated: pre-existing disease u",
+    "expected": "undecidable",
+    "got": "undecidable",
+    "ok": true,
+    "basis": "26 months < 36 but earlier continuous cover (portability credit) not ruled out"
+   },
+   {
+    "id": "V10",
+    "case": "IN-01",
+    "assume": [
+     "prior_cover_start"
+    ],
+    "text": "Claim repudiated: pre-existing disease u",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "26 months here + proven cover since 2018 -> credit carries over, > 36"
+   },
+   {
+    "id": "V11",
+    "case": "IN-01",
+    "assume": [],
+    "text": "Claim rejected: cosmetic surgery is excl",
+    "expected": "likely_valid",
+    "got": "likely_valid",
+    "ok": true,
+    "basis": "cosmetic exclusion: no rule in the graph limits it"
+   },
+   {
+    "id": "V12",
+    "case": "US-01",
+    "assume": [],
+    "text": "Denied: not medically necessary under cl",
+    "expected": "likely_valid",
+    "got": "likely_valid",
+    "ok": true,
+    "basis": "medical-necessity denial: only a procedural rule (notice) applies, nothing bars the clause"
+   },
+   {
+    "id": "V13",
+    "case": "US-01",
+    "assume": [],
+    "text": "Denied: cosmetic, improves appearance",
+    "expected": "likely_valid",
+    "got": "likely_valid",
+    "ok": true,
+    "basis": "cosmetic exclusion: no rule limits it"
+   },
+   {
+    "id": "V15",
+    "case": "IN-01",
+    "assume": [],
+    "text": "Claim rejected: pre-existing diabetes wa",
+    "expected": "undecidable",
+    "got": "undecidable",
+    "ok": true,
+    "basis": "text is a non-disclosure ground (clause 7.2), same facts as V01"
+   },
+   {
+    "id": "V16",
+    "case": "IN-01",
+    "assume": [],
+    "text": "Claim rejected: hypertension is subject ",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "waiting-period ground (clause 4.1); 43 months of cover > 36-month cap"
+   },
+   {
+    "id": "V17",
+    "case": "IN-01",
+    "assume": [],
+    "text": "Claim reduced: room rent above eligible ",
+    "expected": "likely_valid",
+    "got": "likely_valid",
+    "ok": true,
+    "basis": "room-rent clause: no rule in the graph bars it"
+   },
+   {
+    "id": "V14",
+    "case": "US-01",
+    "assume": [],
+    "text": "",
+    "expected": "likely_contestable",
+    "got": "likely_contestable",
+    "ok": true,
+    "basis": "evidence now proves the CT was ordered during the ED visit"
+   }
+  ],
+  "passed": 17,
+  "n": 17
+ },
+ "mapper_sha_final": "ea6a5e92bf"
+}

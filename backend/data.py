@@ -1,7 +1,7 @@
 """ClaimPath seed data. EVERYTHING about the two sample cases is SYNTHETIC (invented people, insurers, numbers).
 The RULES are real: each has a source_url to the official text it was read from, plus a `verification` note."""
 
-REV = 4  # bump when the data changes: the app re-seeds on cold start when the stored revision differs
+REV = 5  # bump when the data changes: the app re-seeds on cold start when the stored revision differs
 
 IRDAI_MC = ("https://irdai.gov.in/documents/37343/365525/%e0%a4%b8%e0%a5%8d%e0%a4%b5%e0%a4%be%e0%a4%b8%e0%a5%8d%e0%a4%a5%e0%a5%8d%e0%a4%af+"
             "%e0%a4%ac%e0%a5%80%e0%a4%ae%e0%a4%be+%e0%a4%b5%e0%a5%8d%e0%a4%af%e0%a4%b5%e0%a4%b8%e0%a4%be%e0%a4%af+%e0%a4%aa%e0%a4%b0+"

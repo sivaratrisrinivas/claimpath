@@ -12,14 +12,8 @@ BASE = "https://www.cioins.co.in/GIC/mediclaim/"
 NAME = re.compile(r"\b(?:Mr|Mrs|Ms|Miss|Smt|Shri|Sri|Dr|Late|Kum)\.?\s+(?:[A-Z][\w.]*\s?){1,4}", re.I)
 CENTRE = re.compile(r"\b(AHMEDABAD|BHUBANESWAR|BHUBANESHWAR|BHOPAL|CHANDIGARH|CHENNAI|DELHI|MUMBAI|KOLKATA|LUCKNOW|PUNE|COCHIN|KOCHI|HYDERABAD|GUWAHATI|JAIPUR|NOIDA|BENGALURU)\b", re.I)
 
-# clause mapping: first match wins. Targets are clause ids in data.py
-IN_MAP = [("IN-7.2", r"non[- ]?disclos|suppress(?:ion|ed)|misrepresent|conceal(?:ed|ment)|false statement|fraud"),
-          ("IN-4.1", r"pre[- ]?existing|waiting period|exclusion clause 4\.[123]|clause 4\.[123]|first (?:30|thirty) days"),
-          ("IN-3.1", r"room rent|proportionate|room charges|room category|boarding"),
-          ("IN-9.1", r"cosmetic|plastic surgery|aesthetic")]
-US_MAP = [("US-9.4", r"\b(?:CT|MRI|PET|imaging|tomograph|emergency|emergent|urgent|prior authori[sz]ation|preauthori[sz]ation|ambulance)\b"),
-          ("US-11.3", r"cosmetic|aesthetic|appearance|reconstruct"),
-          ("US-3.5", r".")]
+sys.path.insert(0, __import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), '..', 'backend'))
+from classify import india_clause, us_clause, outcome_of  # noqa: E402
 
 
 def clean(s):
@@ -38,15 +32,6 @@ def redact(s):
 
 def sentences(t):
     return re.split(r"(?<=[.;])\s+(?=[A-Z])", t)
-
-
-def outcome_of(t):
-    tail = t[-450:].lower()
-    neg = re.search(r"justified|upheld|fails? to succeed|without any relief|dismissed|not entitled|rightly repudiated|no infirmity in the decision|complaint is not tenable|not allowed", tail)
-    pos = re.search(r"\ballowed\b|directed (?:the )?(?:respondent|insurer|company)|award(?:ed)? (?:a |an )?(?:sum|amount)|shall pay|to pay|reimburs|settle the claim|set aside|in favour of the complainant|liable to pay", tail)
-    if neg and not pos: return "insurer's decision upheld"
-    if pos and not neg: return "complainant succeeded (in whole or part)"
-    return None
 
 
 def parse_books(d):
@@ -80,7 +65,7 @@ def build_india(d, n=60):
         b = re.sub(r"^Case No\.? ?[\d/A-Za-z\-]+ .*?(?:Facts\s*&\s*Submissions\s*:|Order Dated\s*:?\s*[\d\w .,]{8,25})", "", b, count=1)
         c["body"] = b = b.strip()
         if len(b) < 250: continue
-        clause = next((cid for cid, rx in IN_MAP if re.search(rx, b[:650], re.I)), None)
+        clause = india_clause(b)
         if not clause: continue
         oc = outcome_of(b)
         if not oc: continue
@@ -92,7 +77,7 @@ def build_india(d, n=60):
         cands.append(dict(id=f"PRC-IN-{c['book'].upper()}-{c['case_no']}", jurisdiction="IN", source_kind="Insurance Ombudsman award summary",
                           case_ref=c["case_no"], forum=(f"Insurance Ombudsman, {c['centre']} centre" if c["centre"] else "Insurance Ombudsman (centre not named in this compilation entry)"), year=c["year"], claim_type=claim_type,
                           amount=amts[0] if amts else 0, currency="INR", clause_id=clause, clause_ref=(ref.group(1) if ref else ""),
-                          reason=reason, outcome=oc, excerpt=redact(b)[:420].rsplit(" ", 1)[0] + "...",
+                          reason=reason, outcome=oc, excerpt=redact(b)[:420].rsplit(" ", 1)[0] + "...", _text=dict(body=redact(b)),
                           source_url=BASE + c["file"], source_note=f"Council for Insurance Ombudsmen award compilation ({c['file']}), as published on cioins.co.in",
                           pre_current_rules=True))
     seen, uniq = set(), []
@@ -120,17 +105,13 @@ def build_us(csvp, n=60):
     rows = list(csv.DictReader(open(csvp, encoding="utf8")))
     pool = [r for r in rows if int(r["ReportYear"]) >= 2024 and r["Findings"] and len(r["Findings"]) > 400]
     pr = random.Random(11)
-    def clause(r):
-        t = r["TreatmentCategory"] + " " + r["TreatmentSubCategory"] + " " + r["Findings"][:600] + " " + r["Type"]
-        return next(cid for cid, rx in US_MAP if re.search(rx, t, re.I if cid != "US-9.4" else 0) or rx == ".")
     out, quota = [], {("US-9.4", "Overturned"): 8, ("US-9.4", "Upheld"): 8, ("US-3.5", "Overturned"): 22, ("US-3.5", "Upheld"): 22}
     pr.shuffle(pool)
     cnt = {}
     for r in pool:
         det = "Overturned" if r["Determination"].startswith("Overturned") else "Upheld"
-        cid = clause(r)
-        if cid == "US-11.3": cid = "US-3.5"
-        if r["Type"] != "Medical Necessity" and cid == "US-9.4": continue
+        cid = us_clause(r["TreatmentCategory"], r["TreatmentSubCategory"], r["Findings"], r["Type"])
+        if cid is None: continue
         k = (cid, det)
         if cnt.get(k, 0) >= quota.get(k, 0): continue
         cnt[k] = cnt.get(k, 0) + 1
@@ -144,6 +125,7 @@ def build_us(csvp, n=60):
                         outcome=("health plan's denial overturned" if det == "Overturned" else "health plan's denial upheld"),
                         excerpt=ex, source_url="https://data.chhs.ca.gov/dataset/independent-medical-review-imr-determinations-trend",
                         source_note="California DMHC IMR determinations dataset (CHHS Open Data); searchable at https://wpso.dmhc.ca.gov/imr/",
+                        _text=dict(treatment_category=r["TreatmentCategory"], treatment_sub=r["TreatmentSubCategory"], typ=r["Type"], findings=clean(r["Findings"])),
                         pre_current_rules=False, days_to_review=int(r["DaysToReview"] or 0), imr_type=r["IMRType"], determination=det))
     return out, len(pool)
 
@@ -151,5 +133,10 @@ def build_us(csvp, n=60):
 if __name__ == "__main__":
     books, imr, outp = sys.argv[1:4]
     ind, pin = build_india(books); us, pus = build_us(imr)
+    if len(sys.argv) > 4:  # evals/cases.jsonl: the exact (redacted) text each classifier saw, for evals/run_eval.py
+        with open(sys.argv[4], "w", encoding="utf8") as fh:
+            for x in ind + us:
+                fh.write(json.dumps({"id": x["id"], "jurisdiction": x["jurisdiction"], **x["_text"]}, ensure_ascii=False) + "\n")
+    for x in ind + us: x.pop("_text", None)
     json.dump({"india": ind, "us": us, "stats": {"india_candidates_after_filters": pin, "us_pool_2024_2026": pus}}, open(outp, "w"), indent=1, ensure_ascii=False)
     print(len(ind), "India;", len(us), "US;", pin, pus)
