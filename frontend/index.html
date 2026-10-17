@@ -3,70 +3,79 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ClaimPath - Claim Rejection Case File</title>
+<title>ClaimPath: read your rejection letter against the rules</title>
 <meta name="description" content="Pick a sample health-insurance rejection. An agent walks a FalkorDB graph and shows the traceable path from the insurer's reason to the rule that may defeat it.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2712%27 fill=%27%230f5e5a%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand">
-    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="6" cy="16" r="3.2" fill="#0f5e5a"/><circle cx="16" cy="8" r="3.2" fill="#0f5e5a" opacity=".55"/><circle cx="16" cy="24" r="3.2" fill="#0f5e5a" opacity=".55"/><circle cx="26" cy="16" r="3.2" fill="#0f5e5a"/><path d="M8.7 14.6 13.4 9.6M8.7 17.4l4.7 5M18.7 9.6l4.6 4.8M18.7 22.4l4.6-4.8" stroke="#0f5e5a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
-    <div><b>ClaimPath</b><span>Claim Rejection Case File</span></div>
-  </div>
-  <nav><a href="https://github.com/sivaratrisrinivas/claimpath" target="_blank" rel="noopener">GitHub</a><a href="#" id="mcp-link">MCP endpoint</a></nav>
-</header>
-
 <main>
-  <section class="hero">
-   <div>
-    <h1>A rejection letter is written to end the conversation.</h1>
-    <p>Most people accept it. But the rules are often on their side, just scattered across circulars nobody reads. Pick a sample case and watch an agent walk a graph from the insurer's reason to the rule that may defeat it, citing a source at every step.</p>
-    <div class="notice"><b>Sample data is synthetic.</b> Rules are real and linked to official text. Not legal or medical advice. ClaimPath never files anything or contacts anyone.</div>
-   </div>
-   <div class="letter-mock" aria-hidden="true">
-     <div class="re">RE: CLAIM NO. SYN-2026-0412 &middot; HOSPITALISATION</div>
-     Dear Policyholder,<br>We regret to inform you that your claim has been repudiated under <mark>Clause 7.2</mark> of the policy, as material facts were not disclosed in the proposal form.<br><br>Yours faithfully,<br>Claims Department
-     <div class="syn">Synthetic example letter</div>
-   </div>
-  </section>
+  <header class="top"><b class="mark">ClaimPath</b></header>
 
-  <section class="pick" aria-label="Choose a sample case">
+  <section class="pick">
+    <h1>Got a rejection letter?</h1>
+    <p class="lead">Pick one. We read it against the rules.</p>
     <div class="cases" id="cases"></div>
-    <details class="paste"><summary>Or paste the insurer's rejection reason</summary>
-      <textarea id="paste" rows="3" placeholder="e.g. Claim repudiated: not medically necessary under our clinical criteria  /  cosmetic procedure excluded"></textarea>
-      <small>The agent matches your text to a clause of the selected sample policy. Nothing is stored.</small>
+    <details class="paste"><summary>or type your own rejection reason</summary>
+      <textarea id="paste" rows="3" placeholder="e.g. Claim repudiated: cosmetic procedure excluded"></textarea>
+      <button id="run" class="quiet">Read it</button>
     </details>
-    <button id="run" class="primary">Run the agent</button>
   </section>
 
   <section id="out" class="out hidden">
-    <aside class="trace" id="trace-panel">
-      <h2>Agent trace <small>every graph tool call, with its Cypher</small></h2>
-      <ol id="trace"></ol>
-    </aside>
-    <div class="main">
-      <div id="verdict" class="card verdict"></div>
-      <div class="card prec hidden" id="prec-card">
-        <h2>Similar real past cases <span class="realtag">REAL &middot; PUBLIC &middot; PAST DECISIONS</span></h2>
-        <div id="prec"></div>
+    <div class="stage">
+    <article class="sheet" id="sheet" data-state="none">
+      <div class="stamp red on" id="st-red" aria-hidden="true">REJECTED</div>
+      <div class="stamp green" id="st-green" aria-hidden="true">CONTESTABLE</div>
+      <div class="lh"><b id="lh-insurer"></b><span>Claims Department</span></div>
+      <div class="re" id="re"></div>
+      <p>Dear Policyholder,</p>
+      <div class="cl">
+        <div class="lines">
+          <p class="ln" id="l1"></p>
+          <p class="ln" id="l2"></p>
+        </div>
+        <div class="marg" id="marg"></div>
       </div>
-      <div class="card"><h2>The traceable path</h2><ol id="path" class="path"></ol></div>
-      <div class="card"><h2>Deadline clock <small id="clock-sub"></small></h2><ul id="clock" class="clock"></ul></div>
-      <div class="card" id="bill-card"><h2>Bill vs policy <small>reconciliation</small></h2><div id="bill"></div></div>
-      <div class="card"><h2>Draft letter <small>for you to review and send yourself</small></h2>
-        <div class="letter-actions"><button id="copy" class="ghost">Copy text</button><button id="dl" class="ghost">Download .txt</button></div>
-        <pre id="letter"></pre></div>
+      <p class="sign">Yours faithfully,<br>Claims Department</p>
+      <div class="slips" id="slips"></div>
+    </article>
+    <aside class="side">
+    <div class="verdict-row">
+      <p id="vline" aria-live="polite"></p>
+      <button id="work-btn" class="quiet" aria-expanded="false" aria-controls="work">show my working</button>
     </div>
-  </section>
-</main>
-<footer class="attr"><details><summary>Data sources, licences and caveats</summary><div id="attr">
+    <section class="tray-wrap hidden" id="tray-wrap"><h2>Your drawer</h2><div id="tray"></div></section>
+    </aside>
+    </div>
+
+
+
+    <section id="work" class="work hidden">
+      <h2>Agent trace <small id="trace-n"></small></h2>
+      <ol id="trace"></ol>
+      <details class="fold hidden" id="prec-card"><summary>Similar real past decisions</summary><div id="prec"></div></details>
+      <details class="fold hidden" id="bill-card"><summary>Bill check</summary><div id="bill"></div></details>
+      <details class="fold"><summary>Sources and licences</summary><div class="attr" id="attr">
+        <p><a href="https://github.com/sivaratrisrinivas/claimpath" target="_blank" rel="noopener">Source code</a> &middot; <a href="/mcp" target="_blank" rel="noopener">MCP endpoint</a> &middot; Built on FalkorDB for the Graph Hacks. Fonts: Special Elite (Apache 2.0) and Caveat (SIL OFL).</p>
+
 <p><b>The two sample cases are synthetic.</b> The rules are real (each links to official text). The "Similar real past cases" panel is separate context: it never changes the verdict.</p>
 <p><b>India &mdash; Insurance Ombudsman award summaries, 2009&ndash;2012.</b> Council for Insurance Ombudsmen compilations published on <a href="https://www.cioins.co.in/" target="_blank" rel="noopener">cioins.co.in</a> (Mediclaim-Book12/13/14/16/17 PDFs). I found no licence statement on the site; they are public official documents, excerpted and abbreviated here with complainant names removed. The CIO no longer publishes new awards publicly (parties download them with an OTP), so nothing newer is available. <b>These awards pre-date the Ombudsman Rules 2017 and the IRDAI 2024 Master Circular (e.g. today's 60-month moratorium and 36-month PED cap), so they show how disputes were argued, not how they would be decided today.</b></p>
 <p><b>USA &mdash; California DMHC Independent Medical Review determinations, 2024&ndash;2026.</b> <a href="https://data.chhs.ca.gov/dataset/independent-medical-review-imr-determinations-trend" target="_blank" rel="noopener">CHHS Open Data Portal</a> (search tool: <a href="https://wpso.dmhc.ca.gov/imr/" target="_blank" rel="noopener">wpso.dmhc.ca.gov/imr</a>). One portal page lists Creative Commons Attribution, the other "CHHS Terms of Use"; both permit public use with attribution. These are California state-regulated plans, not ERISA self-funded plans, and contain no policy clause, dates or dollar amounts.</p>
 <p><b>How the sample was made.</b> Cases were picked by keyword and balanced by outcome, and linked to the nearest sample clause automatically, so counts are NOT a success rate and some links are approximate. The India text was OCR'd from PDFs and may contain errors. Not legal or medical advice.</p>
-</div></details></footer>
-<footer>Built for the FalkorDB Graph Hacks, Track 1. Graph: FalkorDB. Sample cases are synthetic. Not legal or medical advice.</footer>
+</div></details>
+    </section>
+
+    <section class="deadlines" id="dl-wrap"><h2>Deadlines</h2><ul id="clock" class="strip"></ul></section>
+
+    <article class="reply" id="reply">
+      <h2>Your reply, ready to send</h2>
+      <pre id="letter"></pre>
+      <div class="reply-actions"><button id="copy" class="quiet">copy</button><button id="dl" class="quiet">download</button></div>
+    </article>
+  </section>
+</main>
+<footer><p>Sample letters are synthetic; the rules are real. Not legal or medical advice.</p></footer>
 <script src="/static/app.js"></script>
 </body>
 </html>

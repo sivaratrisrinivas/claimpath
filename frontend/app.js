@@ -1,36 +1,126 @@
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cur, n) => (cur === "INR" ? "Rs " + Math.round(n).toLocaleString("en-IN") : "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 }));
-let CASES = [], sel = null, assume = [], baseMissing = [], lastCode = null, running = false;
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let CASES = [], sel = null, assume = [], baseMissing = [], lastCode = null, running = false, built = null;
 
 async function init() {
   CASES = await (await fetch("/api/cases")).json();
-  $("#cases").innerHTML = CASES.map((c) => `<button class="case" data-id="${esc(c.id)}"><div class="tag">${c.country === "IN" ? "INDIA" : "USA"} &middot; SYNTHETIC SAMPLE</div><h3>${esc(c.title)}</h3><p>${esc(c.summary.replace("SYNTHETIC SAMPLE. ", ""))}</p></button>`).join("");
-  document.querySelectorAll(".case").forEach((b) => (b.onclick = () => pick(b.dataset.id)));
+  $("#cases").innerHTML = CASES.map((c, i) => `<button class="case" style="--tilt:${i % 2 ? 0.9 : -0.9}deg" data-id="${esc(c.id)}"><span class="tag">${c.country === "IN" ? "India" : "USA"}</span><h3>${esc(c.title)}</h3></button>`).join("");
+  document.querySelectorAll(".case").forEach((b) => (b.onclick = () => { pick(b.dataset.id); run(true); }));
+  $("#run").onclick = () => { if (!sel) pick(CASES[0].id); run(true); };
+  $("#work-btn").onclick = () => toggleWork();
   const q = new URLSearchParams(location.search);
-  pick(q.get("case") || CASES[0].id);
-  $("#run").onclick = () => run(true);
-  $("#mcp-link").onclick = async (e) => { e.preventDefault(); const r = await (await fetch("/mcp")).json(); alert("POST JSON-RPC to /mcp\nTools: " + r.tools.join(", ")); };
-  if (q.get("auto")) run(true);
+  if (q.get("case")) pick(q.get("case"));
+  if (q.get("auto")) { if (!sel) pick(CASES[0].id); await run(true); if (q.get("work")) toggleWork(true); }
 }
-function pick(id) { sel = id; assume = []; baseMissing = []; lastCode = null; document.querySelectorAll(".case").forEach((b) => b.classList.toggle("sel", b.dataset.id === id)); }
+function toggleWork(on) {
+  const w = $("#work"), open = on ?? w.classList.contains("hidden");
+  w.classList.toggle("hidden", !open); $("#work-btn").setAttribute("aria-expanded", open); $("#work-btn").textContent = open ? "hide my working" : "show my working";
+}
+function pick(id) { sel = id; assume = []; baseMissing = []; lastCode = null; built = null; document.querySelectorAll(".case").forEach((b) => b.classList.toggle("sel", b.dataset.id === id)); }
 
-async function run(fresh, quick) {
+async function run(fresh) {
   if (running) return; running = true;
-  const btn = $("#run"); btn.disabled = true; btn.textContent = "Agent running...";
   if (fresh) { assume = []; baseMissing = []; lastCode = null; }
   const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ case_id: sel, assume, text: $("#paste").value }) });
-  if (!res.ok) { btn.disabled = false; btn.textContent = "Run the agent"; running = false; alert("The graph is unavailable: " + res.status); return; }
+  if (!res.ok) { running = false; alert("The graph is unavailable: " + res.status); return; }
   const d = await res.json();
+  if (fresh) baseMissing = d.missing.slice();
   $("#out").classList.remove("hidden");
-  if (fresh) { baseMissing = d.missing.slice(); }
-  await renderTrace(d.trace, quick || !fresh);
-  renderVerdict(d); renderPath(d); renderClock(d); renderBill(d); renderPrec(d); renderLetter(d);
-  lastCode = d.verdict.code;
-  btn.disabled = false; btn.textContent = "Run the agent again"; running = false;
-  if (fresh) $("#out").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (fresh || !built) buildLetter(d);
+  renderState(d);
+  renderTrace(d.trace); renderClock(d); renderBill(d); renderPrec(d); $("#letter").textContent = d.letter.text;
+  lastCode = d.verdict.code; running = false;
+  if (fresh) { toggleWork(false); $("#out").scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" }); }
 }
 
+/* ---- the letter ---- */
+const words = (t) => t.split(/\s+/).filter(Boolean).map((w, i) => `<span class="w" style="--r:${(Math.sin(i * 12.9898) * 0.9).toFixed(2)}deg">${esc(w)}</span>`).join(" ");
+function buildLetter(d) {
+  built = d.case.id;
+  const sheet = $("#sheet"); sheet.classList.remove("settle"); void sheet.offsetWidth; sheet.classList.add("settle");
+  $("#lh-insurer").textContent = d.policy.insurer;
+  $("#re").innerHTML = `${esc(d.case.rejection_received)} &middot; Re: your claim for ${money(d.case.currency, d.rejection.amount)} &middot; ${esc(d.policy.product)}`;
+  $("#l1").innerHTML = words(d.reason);
+  $("#l2").innerHTML = words(`Under clause ${d.clause.no} of your policy: \u201c${d.clause.text}\u201d`);
+  ["#st-red", "#st-green"].forEach((s) => { const e = $(s); e.classList.remove("on"); void e.offsetWidth; });
+  $("#sheet").dataset.state = "none";
+}
+function setStrikes(state) {
+  const all = [...document.querySelectorAll("#l1 .w, #l2 .w")]; const n1 = document.querySelectorAll("#l1 .w").length;
+  all.forEach((w, i) => {
+    const inLine = i < n1 ? i : i - n1, len = i < n1 ? n1 : all.length - n1;
+    w.classList.toggle("p", state === "pending" && inLine < len * 0.4);
+    w.classList.toggle("f", state === "full");
+    w.style.transitionDelay = state === "full" && !calm ? inLine * 28 + (i < n1 ? 0 : 160) + "ms" : "0ms";
+  });
+}
+function renderState(d) {
+  const v = d.verdict, s = d.strongest, sheet = $("#sheet");
+  const state = v.code === "likely_contestable" ? "full" : v.code === "undecidable" && s ? "pending" : "none";
+  const prev = sheet.dataset.state;
+  sheet.dataset.state = state; setStrikes(state);
+  const win = v.code === "likely_contestable";
+  $("#st-red").classList.toggle("on", !win); $("#st-green").classList.toggle("on", win);
+  if (prev === "pending" && win && !calm) { sheet.classList.remove("thud"); void sheet.offsetWidth; sheet.classList.add("thud"); }
+  // margin note
+  let m = "";
+  if (s && state !== "none") {
+    const ticks = s.facts.map((f) => f.provided ? `<li class="ok">&#10003; ${esc(f.label)}${f.assumed ? " (your document)" : ""}</li>` : `<li class="no">? ${esc(f.label)}</li>`).join("");
+    m = `<div class="note ${state}"><b>${esc(s.name)}</b>${state === "pending" ? '<span class="cond">would strike this out, if the missing fact turns up</span>' : ""}<ul>${ticks}</ul><a href="${esc(s.source_url)}" target="_blank" rel="noopener">${esc(s.citation.split(",")[0])} &#8599;</a></div>`;
+  } else m = `<div class="note none"><b>No rule here beats this reason.</b></div>`;
+  $("#marg").innerHTML = m;
+  // verdict line
+  const flipped = lastCode && lastCode !== v.code;
+  $("#vline").innerHTML = `<b>${esc(v.label)}.</b> ${esc(v.headline)}${flipped ? ' <span class="chg">Verdict changed.</span>' : ""}<span class="because">${v.because.map(esc).join(" ")}</span>`;
+  renderTray(d);
+  $("#sheet").classList.toggle("won", win);
+}
+
+/* ---- the document gesture ---- */
+function renderTray(d) {
+  const wrap = $("#tray-wrap"), slips = $("#slips"), tray = $("#tray");
+  if (!baseMissing.length) { wrap.classList.add("hidden"); slips.innerHTML = ""; return; }
+  wrap.classList.remove("hidden");
+  const on = (m) => assume.includes(m.key);
+  tray.innerHTML = baseMissing.map((m) => on(m)
+    ? `<div class="doc gone" aria-hidden="true"><span>On the letter</span></div>`
+    : `<button class="doc" data-k="${esc(m.key)}" aria-label="Attach: ${esc(m.label)}"><span class="clip"></span><b>${esc(m.label)}</b><small>Where to look: ${esc(m.how_to_find)}</small><em>drag it onto the letter, or tap</em></button>`).join("");
+  slips.innerHTML = baseMissing.filter(on).map((m, i) => `<button class="slip" data-k="${esc(m.key)}" style="--tilt:${i % 2 ? 2 : -2}deg" aria-label="Take this document off the letter"><span class="clip"></span><b>Exhibit ${String.fromCharCode(65 + i)}</b> ${esc(m.what_if_label.replace(/^Add (proof|record): /, ""))}</button>`).join("");
+  tray.querySelectorAll("button.doc").forEach(dragDoc);
+  slips.querySelectorAll(".slip").forEach((b) => (b.onclick = () => flip(b.dataset.k)));
+}
+function flip(k) { assume = assume.includes(k) ? assume.filter((x) => x !== k) : [...assume, k]; run(false); }
+function dragDoc(el) {
+  let sx, sy, moved = false, down = false;
+  el.addEventListener("pointerdown", (e) => { down = true; moved = false; sx = e.clientX; sy = e.clientY; el.setPointerCapture(e.pointerId); el.classList.add("lift"); });
+  el.addEventListener("pointermove", (e) => {
+    if (!down) return; const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+    el.style.transform = `translate(${dx}px,${dy}px) rotate(${Math.max(-6, Math.min(6, dx / 40))}deg)`;
+    const r = $("#sheet").getBoundingClientRect(); $("#sheet").classList.toggle("target", e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom);
+  });
+  el.addEventListener("pointerup", (e) => {
+    if (!down) return; down = false; el.classList.remove("lift");
+    const r = $("#sheet").getBoundingClientRect(); $("#sheet").classList.remove("target");
+    const over = e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom;
+    if (!moved || over) { el.dataset.done = "1"; flip(el.dataset.k); } else el.style.transform = "";
+  });
+  el.addEventListener("click", (e) => { if (e.detail === 0) flip(el.dataset.k); });  // keyboard
+}
+
+/* ---- deadlines as a torn calendar strip ---- */
+const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+function renderClock(d) {
+  $("#clock").innerHTML = d.clock.deadlines.map((x, i) => {
+    const dt = x.due ? x.due.split("-") : null;
+    const big = dt ? `<span class="mo">${MON[+dt[1] - 1]}</span><span class="dy">${+dt[2]}</span>` : `<span class="mo">within</span><span class="dy">${x.amount}</span><span class="mo">${esc(x.unit)}</span>`;
+    return `<li style="--j:${i % 3}"><div class="when">${big}</div><div class="what"><span class="${x.kind === "you_must" ? "you" : "they"}">${x.kind === "you_must" ? "You must" : "They must"}</span> ${esc(x.label)}<a href="${esc(x.source_url)}" target="_blank" rel="noopener">source &#8599;</a></div></li>`;
+  }).join("");
+}
+
+/* ---- working (collapsed) ---- */
 function summary(t) {
   const r = t.result;
   switch (t.tool) {
@@ -47,51 +137,16 @@ function summary(t) {
   }
   return "";
 }
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function renderTrace(trace, quick) {
-  const ol = $("#trace"); ol.innerHTML = "";
+
+function renderTrace(trace) {
+  const ol = $("#trace"); ol.innerHTML = ""; $("#trace-n").textContent = "(" + trace.length + " steps)";
   for (const t of trace) {
     const li = document.createElement("li"); li.className = "step";
     const cy = (t.cypher || []).map((c) => c.cypher + (Object.keys(c.params).length ? "\n// params: " + JSON.stringify(c.params) : "") + `\n// ${c.rows} rows, ${c.ms} ms`).join("\n\n");
-    li.innerHTML = `<span class="ms">${t.ms} ms</span><div class="t">${esc(t.tool)}(${esc(Object.entries(t.args).filter(([k]) => k !== "text").map(([k, v]) => k + "=" + (Array.isArray(v) ? "[" + v + "]" : v)).join(", "))})</div><div class="why">${esc(t.why)}</div><div class="res">${esc(summary(t))}</div>` + (cy ? `<details><summary>Cypher (${t.cypher.length})</summary><pre>${esc(cy)}</pre></details>` : "");
+    li.innerHTML = `<div class="t">${esc(t.tool)}</div><div class="why">${esc(t.why)}</div><div class="res">${esc(summary(t))}</div>` + (cy ? `<details><summary>Show the Cypher query</summary><pre>${esc(cy)}</pre></details>` : "");
     ol.appendChild(li);
-    if (!quick) { li.scrollIntoView({ block: "nearest", behavior: "smooth" }); await sleep(420); }
   }
 }
-
-function renderVerdict(d) {
-  const v = d.verdict, el = $("#verdict");
-  el.className = "card verdict " + v.code;
-  const flipped = lastCode && lastCode !== v.code;
-  let h = `<span class="badge">${esc(v.label)}</span>${flipped ? '<span class="flip">verdict flipped</span>' : ""}<h3>${esc(v.headline)}</h3><div class="because">${v.because.map(esc).join("<br>")}</div>`;
-  if (baseMissing.length) {
-    h += `<div class="facts"><h4>Missing facts &mdash; what if you find one?</h4>` + baseMissing.map((m) => {
-      const on = assume.includes(m.key);
-      return `<div class="mf"><button class="sw ${on ? "on" : ""}" data-k="${esc(m.key)}" aria-label="toggle what-if"></button><div class="lbl"><div>${esc(m.label)}</div><div class="how">${on ? '<span class="swlbl">What-if on</span> ' + esc(m.what_if_label) : "Where to look: " + esc(m.how_to_find)}</div></div></div>`;
-    }).join("") + `</div>`;
-  }
-  el.innerHTML = h;
-  el.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { const k = b.dataset.k; assume = assume.includes(k) ? assume.filter((x) => x !== k) : [...assume, k]; run(false, true); }));
-}
-
-function renderPath(d) {
-  const s = d.strongest, ol = $("#path");
-  const nodes = [];
-  nodes.push(["Insurer's reason", `<blockquote>${esc(d.reason)}</blockquote>`]);
-  nodes.push(["Policy clause", `<div><b>${esc(d.clause.no)} ${esc(d.clause.title)}</b> <small>(${esc(d.policy.product)}, ${esc(d.clause.page)})</small></div><blockquote>${esc(d.clause.text)}</blockquote>`]);
-  if (s) {
-    nodes.push(["Your evidence", s.facts.length ? s.facts.map((f) => f.provided ? `<div class="ev ${f.assumed ? "what" : "ok"}"><b>${f.assumed ? "What-if: " : "&#10003; "}${esc(f.label)}</b>${f.value ? ": " + esc(f.value) : ""}<span class="src">${f.evidence.map((e) => esc(e.label) + " &middot; " + esc(e.doc)).join("<br>")}</span></div>` : `<div class="ev miss"><b>&#9888; Not found: ${esc(f.label)}</b><span class="src">${esc(f.how_to_find)}</span></div>`).join("") : "<div>This clause is not limited by any rule that depends on your evidence.</div>"]);
-    nodes.push(["Governing rule", `<div><b>${esc(s.name)}</b></div><div>${esc(s.summary)}</div><div class="src"><a href="${esc(s.source_url)}" target="_blank" rel="noopener">${esc(s.citation)} &#8599;</a>${s.source_alt ? ` &middot; <a href="${esc(s.source_alt)}" target="_blank" rel="noopener">second source</a>` : ""}</div><div class="ver">How verified: ${esc(s.verification)}</div>${d.candidates.length > 1 ? `<details><summary>${d.candidates.length - 1} other rule(s) also apply</summary>${d.candidates.filter((c) => c.id !== s.id).map((c) => `<div class="ev"><b>${esc(c.name)}</b><span class="src"><a href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.citation)} &#8599;</a></span></div>`).join("")}</details>` : ""}`]);
-  } else nodes.push(["Governing rule", "<div>No rule in the graph limits this clause.</div>"]);
-  nodes.push(["Verdict", `<div><b>${esc(d.verdict.label)}</b>: ${esc(d.verdict.headline)}</div>`]);
-  ol.innerHTML = nodes.map((n, i) => `<li class="pn"><div class="dot">${i + 1}</div><div><div class="k">${esc(n[0])}</div><div class="v">${n[1]}</div></div></li>`).join("");
-}
-
-function renderClock(d) {
-  $("#clock-sub").textContent = "as of " + d.clock.as_of + " - dates from your filing are projected as if you file today";
-  $("#clock").innerHTML = d.clock.deadlines.map((x) => `<li><div class="d">${x.due ? esc(x.due) : "relative"}</div><div><div class="lab"><span class="${x.kind === "you_must" ? "you" : "they"}">${x.kind === "you_must" ? "YOU MUST" : "THEY MUST"}</span> ${esc(x.label)}</div><div class="meta">${x.days_left !== null ? x.days_left + " days from today &middot; " : ""}${esc(x.basis)} &middot; <a href="${esc(x.source_url)}" target="_blank" rel="noopener">source</a></div></div></li>`).join("");
-}
-
 function renderBill(d) {
   const b = d.bill, card = $("#bill-card");
   if (!b || !b.has_bill) { card.classList.add("hidden"); return; }
@@ -106,26 +161,17 @@ function renderBill(d) {
 function precItem(e, rel) {
   const win = e.outcome_class === "claimant";
   const amt = e.amount ? " &middot; claim " + money(e.currency, e.amount) : "";
-  return `<li class="pi"><span class="oc ${win ? "w" : "l"}">${esc(win ? "Claimant succeeded" : "Insurer upheld")}</span> <b>${esc(e.forum.replace("Insurance Ombudsman", "Ombudsman"))}, ${esc(e.year)}</b>${e.pre_current_rules ? ' <span class="old">pre-2017 rules</span>' : ""}${rel ? ' <span class="rel">via ' + esc(rel) + "</span>" : ""}
+  return `<li class="pi"><span class="oc ${win ? "w" : "l"}">${esc(win ? "Claimant succeeded" : "Insurer upheld")}</span> <b>${esc(e.forum.replace("Insurance Ombudsman", "Ombudsman"))}, ${esc(e.year)}</b>${rel ? ' <span class="rel">via ' + esc(rel) + "</span>" : ""}
     <div class="pm">${esc(e.claim_type)}${amt}${e.clause_ref ? " &middot; policy clause " + esc(e.clause_ref) : ""}</div>
     <details><summary>${esc(e.reason.length > 150 ? e.reason.slice(0, 150).replace(/\s\S*$/, "") + "..." : e.reason)}</summary><div class="ex">${esc(e.excerpt)}</div><div class="srcl">${esc(e.case_ref)} &middot; <a href="${esc(e.source_url)}" target="_blank" rel="noopener">source &#8599;</a></div></details></li>`;
 }
 function renderPrec(d) {
   const p = d.precedents, card = $("#prec-card");
-  if (!p || (!p.examples.length && !p.related.length)) { card.classList.add("hidden"); return; }
+  if (!p || !p.examples.length) { card.classList.add("hidden"); return; }
   card.classList.remove("hidden");
-  const n = p.loaded_for_clause, india = d.case.country === "IN";
-  let h = `<div class="pnote">Real decisions on a clause like <b>${esc(p.clause.no)} ${esc(p.clause.title)}</b>: ${n.claimant_favoured + n.insurer_favoured} loaded (${n.claimant_favoured} claimant-favoured, ${n.insurer_favoured} insurer-favoured). Illustrative sample, <b>not a success rate</b>.</div>`;
-  if (india) h += `<div class="pwarn">India awards here are from <b>2009&ndash;2012</b> and pre-date the Ombudsman Rules 2017 and today's IRDAI rules. They show how such disputes were argued, not how they would be decided now.</div>`;
-  else h += `<div class="pwarn">California state-regulated plans (DMHC Independent Medical Review, 2024&ndash;2026); outcome is on medical-necessity review, which is a different question from a prior-authorization technicality.</div>`;
-  h += `<ul class="plist scroll">${p.examples.map((e) => precItem(e)).join("")}</ul>`;
-  if (p.related.length) h += `<details class="relwrap"><summary>Also under the same governing rule (${p.related_total} more loaded; ${p.related.length} shown)</summary><ul class="plist">${p.related.map((e) => precItem(e, e.related_clause)).join("")}</ul></details>`;
-  h += `<div class="pnote small">Sources: ${india ? '<a href="https://www.cioins.co.in/" target="_blank" rel="noopener">Council for Insurance Ombudsmen</a>' : '<a href="https://data.chhs.ca.gov/dataset/independent-medical-review-imr-determinations-trend" target="_blank" rel="noopener">California DMHC IMR data (CHHS)</a>'} &middot; <a href="#" id="attr-open">licences &amp; caveats</a></div>`;
-  $("#prec").innerHTML = h;
-  $("#attr-open").onclick = (e) => { e.preventDefault(); const dt = document.querySelector("footer.attr details"); dt.open = true; dt.scrollIntoView({ behavior: "smooth" }); };
+  const note = d.case.country === "IN" ? "Real Ombudsman awards from 2009&ndash;2012, before today's rules. A sample, not a success rate." : "Real California independent medical reviews, 2024&ndash;2026. A sample, not a success rate.";
+  $("#prec").innerHTML = `<div class="pnote">${note}</div><ul class="plist scroll">${p.examples.map((e) => precItem(e)).join("")}</ul>`;
 }
-
-function renderLetter(d) { $("#letter").textContent = d.letter.text; }
-$("#copy").onclick = () => { navigator.clipboard.writeText($("#letter").textContent); $("#copy").textContent = "Copied"; setTimeout(() => ($("#copy").textContent = "Copy text"), 1500); };
+$("#copy").onclick = () => { navigator.clipboard.writeText($("#letter").textContent); $("#copy").textContent = "copied"; setTimeout(() => ($("#copy").textContent = "copy"), 1500); };
 $("#dl").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("#letter").textContent], { type: "text/plain" })); a.download = "claimpath-draft-letter.txt"; a.click(); };
 init();

@@ -17,7 +17,7 @@ ClaimPath takes one rejection and shows **one traceable path**, with a source li
 
 > insurer's reason -> the policy clause it relies on -> what **your** evidence proves (dates, bill lines) -> the governing rule -> verdict
 
-The verdict is one of **likely contestable**, **likely valid**, or **undecidable until X is found**, with the list of missing facts and where to look. A **what-if toggle** adds a missing fact and the verdict flips live. It then reconciles the hospital bill against the policy (India: room-rent proportionate deduction; US: denied EOB lines), starts the deadline clock, and drafts the appeal / grievance letter for you to send yourself.
+The verdict is one of **likely contestable**, **likely valid**, or **undecidable until X is found**, with the list of missing facts and where to look. You **drag the missing document onto the letter** (or tap it) and the verdict flips live. It then reconciles the hospital bill against the policy (India: room-rent proportionate deduction; US: denied EOB lines), starts the deadline clock, and drafts the appeal / grievance letter for you to send yourself.
 
 ClaimPath never files anything and never contacts anyone. Sample cases are **synthetic** (one India, one USA); a separate panel shows 118 **real past decisions** (see below). The rules are real and each carries the URL of the official text. **Not legal or medical advice.**
 
@@ -53,7 +53,7 @@ RETURN r.id, r.name, r.citation, ..., ft.key, rq.role, ev.id, pv.value
 
 **What-if is a query parameter, not a write:** `assume=["prior_cover_start"]` marks a missing FactType as provided for one request. Nothing is persisted, so visitors never affect each other.
 
-### Agent tools (UI trace panel and `/mcp` use the same registry)
+### Agent tools (the in-page trace and `/mcp` use the same registry)
 
 | Tool | What it does | Graph feature |
 |---|---|---|
@@ -68,7 +68,7 @@ RETURN r.id, r.name, r.citation, ..., ft.key, rq.role, ev.id, pv.value
 | `precedent_lookup` | REAL past decisions analogous to the cited clause, plus ones on other clauses under the same rule (context only, never changes the verdict) | **2-hop traversal** Clause -> Rule <- Clause <- Precedent |
 | `rule_catalog` | Rules with source URL + verification note | scan |
 
-The agent is rule-based (no LLM key). It plans tool calls from the case, logs **every** call with its Cypher, parameters, row count and timing, and renders them in the trace panel. The `/mcp` endpoint (JSON-RPC over HTTP: `initialize`, `tools/list`, `tools/call`) lets any MCP client pick the same tools:
+The agent is rule-based (no LLM key). It plans tool calls from the case, logs **every** call with its Cypher, parameters, row count and timing, and shows them under "show my working". The `/mcp` endpoint (JSON-RPC over HTTP: `initialize`, `tools/list`, `tools/call`) lets any MCP client pick the same tools:
 
 ```bash
 curl -s -X POST https://claimpath-srini5.vercel.app/mcp -H 'content-type: application/json' \
@@ -88,7 +88,7 @@ Hosted: set `FALKORDB_HOST`, `FALKORDB_PORT`, `FALKORDB_USERNAME`, `FALKORDB_PAS
 
 ## Real past decisions (Precedent nodes)
 
-Beyond the two synthetic cases, the graph holds **118 real, public, past decisions** shown in a "Similar real past cases" panel after the agent runs. They are context only: the verdict is still driven by the synthetic cases and the real rules. Counts loaded (exactly what `backend/precedents.json` contains):
+Beyond the two synthetic cases, the graph holds **118 real, public, past decisions** shown under "show my working" after the agent runs. They are context only: the verdict is still driven by the synthetic cases and the real rules. Counts loaded (exactly what `backend/precedents.json` contains):
 
 | Source | Loaded | Years | What each record has |
 |---|---|---|---|
@@ -131,6 +131,10 @@ Built with AI coding assistance (Grok Bot). The author is responsible for the co
 - 45 CFR 147.136 (internal appeals and external review): https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-B/part-147/section-147.136 ; CMS external review: https://www.cms.gov/cciio/programs-and-initiatives/consumer-support-and-information/csg-ext-appeals-facts
 - CNBC-TV18 on the 36-month PED cap (secondary): https://www.cnbctv18.com/personal-finance/insurance-irdai-reduces-waiting-period-moratorium-lower-how-will-health-policies-benefit-19396754.htm
 
+
+## Design intent
+
+The page *is* the insurer's rejection letter. You pick a case and the cold, stamped denial appears; the agent's findings strike through the insurer's reasoning in the margin, each mark with its rule and a source link. The missing fact is a document you drag onto the letter: the strikes complete and the stamp flips from REJECTED to CONTESTABLE. Deadlines are a torn calendar strip, the draft is the reply sheet beneath. Everything else (agent trace and Cypher, real past decisions, bill check, sources and licences) sits behind one quiet "show my working" control. Every element has to earn its place; motion respects `prefers-reduced-motion`; it works at phone width. Fonts are self-hosted: Special Elite (Apache 2.0) and Caveat (SIL OFL).
 
 ## Accuracy check
 
