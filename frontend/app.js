@@ -25,7 +25,7 @@ async function run(fresh, quick) {
   $("#out").classList.remove("hidden");
   if (fresh) { baseMissing = d.missing.slice(); }
   await renderTrace(d.trace, quick || !fresh);
-  renderVerdict(d); renderPath(d); renderClock(d); renderBill(d); renderLetter(d);
+  renderVerdict(d); renderPath(d); renderClock(d); renderBill(d); renderPrec(d); renderLetter(d);
   lastCode = d.verdict.code;
   btn.disabled = false; btn.textContent = "Run the agent again"; running = false;
   if (fresh) $("#out").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -42,6 +42,7 @@ function summary(t) {
     case "reconcile_bill": return r.has_bill ? (r.country === "IN" ? `billed ${money(r.currency, r.total_billed)}; room-rent deduction ~${money(r.currency, r.proportionate_deduction)}` : `denied ${money(r.currency, r.denied_total)} on ${r.denied_lines.length} line(s)`) : "no bill";
     case "escalation_path": return r.path.map((p) => p.id.replace("R-", "").replace("REJ-", "REJ ")).join(" -> ") + ` (${r.hops} hops)`;
     case "deadline_clock": return r.deadlines.length + " deadlines from the remedy rules";
+    case "precedent_lookup": return `clause ${r.clause.no}: ${r.loaded_for_clause.claimant_favoured + r.loaded_for_clause.insurer_favoured} real precedents loaded (${r.loaded_for_clause.claimant_favoured} claimant-favoured, ${r.loaded_for_clause.insurer_favoured} insurer-favoured) + ${r.related_total} via shared rule`;
     case "draft_letter": return `${r.chars} chars; ${r.placeholders.length} placeholders to fill`;
   }
   return "";
@@ -100,6 +101,28 @@ function renderBill(d) {
   h += `<div class="note">${esc(b.note)}</div>`;
   if (isIN) h += `<div class="note">If the rejection is overturned, expected payable is about <b>${money(cur, b.expected_payable_if_overturned)}</b> of ${money(cur, b.total_billed)} billed.</div>`;
   $("#bill").innerHTML = h;
+}
+
+function precItem(e, rel) {
+  const win = e.outcome_class === "claimant";
+  const amt = e.amount ? " &middot; claim " + money(e.currency, e.amount) : "";
+  return `<li class="pi"><span class="oc ${win ? "w" : "l"}">${esc(win ? "Claimant succeeded" : "Insurer upheld")}</span> <b>${esc(e.forum.replace("Insurance Ombudsman", "Ombudsman"))}, ${esc(e.year)}</b>${e.pre_current_rules ? ' <span class="old">pre-2017 rules</span>' : ""}${rel ? ' <span class="rel">via ' + esc(rel) + "</span>" : ""}
+    <div class="pm">${esc(e.claim_type)}${amt}${e.clause_ref ? " &middot; policy clause " + esc(e.clause_ref) : ""}</div>
+    <details><summary>${esc(e.reason.length > 150 ? e.reason.slice(0, 150).replace(/\s\S*$/, "") + "..." : e.reason)}</summary><div class="ex">${esc(e.excerpt)}</div><div class="srcl">${esc(e.case_ref)} &middot; <a href="${esc(e.source_url)}" target="_blank" rel="noopener">source &#8599;</a></div></details></li>`;
+}
+function renderPrec(d) {
+  const p = d.precedents, card = $("#prec-card");
+  if (!p || (!p.examples.length && !p.related.length)) { card.classList.add("hidden"); return; }
+  card.classList.remove("hidden");
+  const n = p.loaded_for_clause, india = d.case.country === "IN";
+  let h = `<div class="pnote">Real decisions on a clause like <b>${esc(p.clause.no)} ${esc(p.clause.title)}</b>: ${n.claimant_favoured + n.insurer_favoured} loaded (${n.claimant_favoured} claimant-favoured, ${n.insurer_favoured} insurer-favoured). Illustrative sample, <b>not a success rate</b>.</div>`;
+  if (india) h += `<div class="pwarn">India awards here are from <b>2009&ndash;2012</b> and pre-date the Ombudsman Rules 2017 and today's IRDAI rules. They show how such disputes were argued, not how they would be decided now.</div>`;
+  else h += `<div class="pwarn">California state-regulated plans (DMHC Independent Medical Review, 2024&ndash;2026); outcome is on medical-necessity review, which is a different question from a prior-authorization technicality.</div>`;
+  h += `<ul class="plist scroll">${p.examples.map((e) => precItem(e)).join("")}</ul>`;
+  if (p.related.length) h += `<details class="relwrap"><summary>Also under the same governing rule (${p.related_total} more loaded; ${p.related.length} shown)</summary><ul class="plist">${p.related.map((e) => precItem(e, e.related_clause)).join("")}</ul></details>`;
+  h += `<div class="pnote small">Sources: ${india ? '<a href="https://www.cioins.co.in/" target="_blank" rel="noopener">Council for Insurance Ombudsmen</a>' : '<a href="https://data.chhs.ca.gov/dataset/independent-medical-review-imr-determinations-trend" target="_blank" rel="noopener">California DMHC IMR data (CHHS)</a>'} &middot; <a href="#" id="attr-open">licences &amp; caveats</a></div>`;
+  $("#prec").innerHTML = h;
+  $("#attr-open").onclick = (e) => { e.preventDefault(); const dt = document.querySelector("footer.attr details"); dt.open = true; dt.scrollIntoView({ behavior: "smooth" }); };
 }
 
 function renderLetter(d) { $("#letter").textContent = d.letter.text; }

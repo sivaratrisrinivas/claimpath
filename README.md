@@ -19,7 +19,7 @@ ClaimPath takes one rejection and shows **one traceable path**, with a source li
 
 The verdict is one of **likely contestable**, **likely valid**, or **undecidable until X is found**, with the list of missing facts and where to look. A **what-if toggle** adds a missing fact and the verdict flips live. It then reconciles the hospital bill against the policy (India: room-rent proportionate deduction; US: denied EOB lines), starts the deadline clock, and drafts the appeal / grievance letter for you to send yourself.
 
-ClaimPath never files anything and never contacts anyone. Sample cases are **synthetic** (one India, one USA). The rules are real and each carries the URL of the official text. **Not legal or medical advice.**
+ClaimPath never files anything and never contacts anyone. Sample cases are **synthetic** (one India, one USA); a separate panel shows 118 **real past decisions** (see below). The rules are real and each carries the URL of the official text. **Not legal or medical advice.**
 
 ## How (and why the graph is the product)
 
@@ -35,6 +35,8 @@ If you take FalkorDB out, there is nothing left: every tool is a Cypher query, a
 (Rejection)-[:APPEAL_VIA]->(Rule)          // first remedy
 (Rule)-[:RELATES {kind: supports|escalates}]->(Rule)
 (Rule)-[:HAS_DEADLINE]->(Deadline {amount, unit, anchor, kind})
+(Precedent {outcome, year, forum, source_url, ...})-[:ANALOGOUS_TO]->(Clause)   // REAL past decisions, context only
+(Precedent)-[:BEARS_ON]->(Rule)                                              // via the clause's LIMITED_BY rule
 ```
 
 **Multi-hop traversal** (`strongest_rule_path`): Clause -> Rule -> FactType <- Evidence in one query; the rule is evaluated in code from those facts (date math is code, not a model).
@@ -63,6 +65,7 @@ RETURN r.id, r.name, r.citation, ..., ft.key, rq.role, ev.id, pv.value
 | `reconcile_bill` | Bill vs policy: room-rent proportionate deduction (IN) / denied lines (US) | aggregation |
 | `escalation_path` | Rejection -> final free forum | **shortestPath** |
 | `deadline_clock` | Deadlines the remedy rules start | variable-length traversal |
+| `precedent_lookup` | REAL past decisions analogous to the cited clause, plus ones on other clauses under the same rule (context only, never changes the verdict) | **2-hop traversal** Clause -> Rule <- Clause <- Precedent |
 | `rule_catalog` | Rules with source URL + verification note | scan |
 
 The agent is rule-based (no LLM key). It plans tool calls from the case, logs **every** call with its Cypher, parameters, row count and timing, and renders them in the trace panel. The `/mcp` endpoint (JSON-RPC over HTTP: `initialize`, `tools/list`, `tools/call`) lets any MCP client pick the same tools:
@@ -83,10 +86,28 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/
 
 Hosted: set `FALKORDB_HOST`, `FALKORDB_PORT`, `FALKORDB_USERNAME`, `FALKORDB_PASSWORD` (and `FALKORDB_SSL=1` if TLS). On cold start the graph is seeded idempotently with batched `UNWIND` writes, guarded by a lock *graph* (a hosted FalkorDB user may not be allowed raw `SET`), and one connection is reused across requests. The deployed instance is FalkorDB Cloud.
 
+## Real past decisions (Precedent nodes)
+
+Beyond the two synthetic cases, the graph holds **118 real, public, past decisions** shown in a "Similar real past cases" panel after the agent runs. They are context only: the verdict is still driven by the synthetic cases and the real rules. Counts loaded (exactly what `backend/precedents.json` contains):
+
+| Source | Loaded | Years | What each record has |
+|---|---|---|---|
+| Insurance Ombudsman award summaries, Council for Insurance Ombudsmen compilations on cioins.co.in (Mediclaim-Book12/13/14/16/17 PDFs) | **58** (of 111 that passed filters; ~700 entries parsed from the books) | 2009-2012 | case no., centre (when printed), year, claim type, first Rs amount, policy clause number as quoted, reason, outcome, excerpt, source URL |
+| California DMHC Independent Medical Review determinations (CHHS open data CSV, 42,749 rows in total; 5,991 rows from 2024-2026 passed filters) | **60** (8+8 on imaging/emergency/urgent-type treatments, 22+22 other medical necessity; half overturned, half upheld) | 2024-2026 | reference id, year, diagnosis/treatment category, determination, Findings excerpt, source URL |
+
+Each precedent is linked to the nearest sample Clause (keyword match) and, through it, to the Rule that limits that clause. `scripts/build_precedents.py` regenerates the JSON from the downloaded sources; selection is seeded and deterministic.
+
+**Caveats (also shown in the app):**
+- **India awards pre-date current rules.** They are 2009-2012, before the Ombudsman Rules 2017 and the IRDAI 2024 Master Circular (60-month moratorium, 36-month PED cap). The CIO no longer publishes awards publicly (parties download with an OTP), so no newer set exists. They show how disputes were argued, not how they would be decided today.
+- **Not a success rate.** The sample is keyword-selected and balanced by outcome (India's non-disclosure set is only 2 claimant-favoured of 16 because the books contain few). Never read the counts as win rates.
+- **Approximate links.** Clause mapping is automatic keyword matching. India text was OCR'd from PDFs and can contain errors. Complainant/patient names are removed (a test checks for honorifics + names; it is a heuristic, not a guarantee).
+- **California IMRs** cover state-regulated plans only, contain no policy clause, dates or amounts, and decide medical necessity (a different question from a prior-authorization technicality). The US-01 sample's "imaging/emergency" group is matched by treatment keywords, so it is the nearest available, not an exact analogue.
+- **Licences/terms.** CIO PDFs: no licence statement found; public official documents, abbreviated with attribution. DMHC data: one portal page lists Creative Commons Attribution, another "CHHS Terms of Use"; attribution is given. I did not use CourtListener, Indian Kanoon or any scraping; the two sources are direct file downloads. Check terms before any larger redistribution.
+
 ## Honest limitations
 
 - **Two synthetic sample cases.** The insurers, people, policies and bills are invented. The rules are real; the facts are not.
-- **A small rules graph (10 rules).** "Likely valid" means *no rule in this graph defeats the clause*, not that the insurer is right. It is a triage aid, not a prediction of outcome; there is no outcome or win-rate data.
+- **A small rules graph (10 rules).** "Likely valid" means *no rule in this graph defeats the clause*, not that the insurer is right. It is a triage aid, not a prediction of outcome; the real past decisions are an illustrative, non-representative sample, so there is still no win-rate data.
 - **Verification varies per rule** and each rule node states it. The IRDAI 60-month moratorium and rejection-letter rules were read from the IRDAI Master Circular text (29 May 2024); the 36-month PED cap is confirmed only through secondary reporting; US rules were read on eCFR. Paragraph numbering follows the circular's own table. Applicability to older policies was not checked.
 - **India Ombudsman deadline is conservative:** Rule 14(3) counts one year from the insurer's reply to your representation; ClaimPath shows one year from the claim rejection (the Council of Insurance Ombudsmen's guidance) so you are never late.
 - **US:** plan type matters (self-funded ERISA vs fully insured, state vs federal external review). ClaimPath encodes the federal floor only. The "emergency" question is ultimately a fact decision by the plan or reviewer.

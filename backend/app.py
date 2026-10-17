@@ -120,7 +120,8 @@ def health():
     n = run("MATCH (n) RETURN count(n)")[0][0]
     rev = run("MATCH (m:Meta {id:'rev'}) RETURN m.rev")
     return {"ok": True, "graph": seedmod.GRAPH, "nodes": n, "rev": rev[0][0] if rev else None,
-            "rules": run("MATCH (r:Rule) RETURN count(r)")[0][0], "falkordb": "connected"}
+            "rules": run("MATCH (r:Rule) RETURN count(r)")[0][0],
+            "precedents": run("MATCH (p:Precedent) RETURN count(p)")[0][0], "falkordb": "connected"}
 
 
 @app.get("/")

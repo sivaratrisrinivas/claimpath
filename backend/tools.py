@@ -221,6 +221,42 @@ RETURN r.id, r.name, r.citation, r.source_url, r.effect, r.verification ORDER BY
     return {"rules": [dict(id=r[0], name=r[1], citation=r[2], source_url=r[3], effect=r[4], verification=r[5]) for r in rows]}
 
 
+def precedent_lookup(ctx, case_id, clause_id=None, limit=6):
+    """REAL, PUBLIC, PAST decisions analogous to the clause the rejection relies on: direct (Precedent)-[:ANALOGOUS_TO]->(Clause), plus
+    precedents on other clauses that are limited by the same Rule (2 hops: Clause -> Rule <- Clause <- Precedent). Context only; not a prediction."""
+    limit = max(1, min(int(limit), 12))
+    if not clause_id:
+        rows = ctx.q("MATCH (:Case {id:$cid})-[:HAS_REJECTION]->(:Rejection)-[:CITES]->(cl:Clause) RETURN cl.id", {"cid": case_id})
+        if not rows:
+            raise KeyError(f"unknown case {case_id}")
+        clause_id = rows[0][0]
+    cl = ctx.q("MATCH (cl:Clause {id:$clid}) RETURN cl.no, cl.title", {"clid": clause_id})
+    if not cl:
+        raise KeyError(f"unknown clause {clause_id}")
+    cols = "p.id, p.case_ref, p.forum, p.year, p.claim_type, p.amount, p.currency, p.clause_ref, p.reason, p.outcome, p.outcome_class, p.excerpt, p.source_url, p.source_note, p.pre_current_rules, p.jurisdiction"
+    agg = ctx.q("MATCH (p:Precedent)-[:ANALOGOUS_TO]->(:Clause {id:$clid}) RETURN p.outcome_class, count(p)", {"clid": clause_id})
+    counts = {r[0]: r[1] for r in agg}
+    half = max(1, limit // 2)
+    direct = []
+    for oc in ("claimant", "insurer"):
+        direct += ctx.q(f"MATCH (p:Precedent {{outcome_class:$oc}})-[:ANALOGOUS_TO]->(:Clause {{id:$clid}}) RETURN {cols} ORDER BY p.year DESC, p.id LIMIT $n",
+                        {"oc": oc, "clid": clause_id, "n": half})
+    rel = ctx.q(f"MATCH (:Clause {{id:$clid}})-[:LIMITED_BY]->(r:Rule)<-[:BEARS_ON]-(p:Precedent) MATCH (p)-[:ANALOGOUS_TO]->(c2:Clause) WHERE c2.id <> $clid "
+                f"RETURN DISTINCT {cols}, c2.no, c2.title, r.id ORDER BY p.year DESC, p.id LIMIT 3", {"clid": clause_id})
+    rel_total = ctx.q("MATCH (:Clause {id:$clid})-[:LIMITED_BY]->(r:Rule)<-[:BEARS_ON]-(p:Precedent)-[:ANALOGOUS_TO]->(c2:Clause) WHERE c2.id <> $clid RETURN count(DISTINCT p)", {"clid": clause_id})[0][0]
+
+    def row(r, extra=False):
+        d = dict(id=r[0], case_ref=r[1], forum=r[2], year=r[3], claim_type=r[4], amount=r[5], currency=r[6], clause_ref=r[7], reason=r[8], outcome=r[9],
+                 outcome_class=r[10], excerpt=r[11], source_url=r[12], source_note=r[13], pre_current_rules=r[14], jurisdiction=r[15])
+        if extra:
+            d.update(related_clause=f"{r[16]} {r[17]}", via_rule=r[18])
+        return d
+    return {"label": "REAL, PUBLIC, PAST decisions (illustrative sample, not a success rate)", "clause": {"id": clause_id, "no": cl[0][0], "title": cl[0][1]},
+            "loaded_for_clause": {"claimant_favoured": counts.get("claimant", 0), "insurer_favoured": counts.get("insurer", 0)},
+            "examples": [row(r) for r in direct], "related": [row(r, True) for r in rel], "related_total": rel_total,
+            "caveat": "Loaded sample was selected by keyword and balanced by outcome, so counts say nothing about how often claimants win."}
+
+
 S = lambda **p: {"type": "object", "properties": p, "additionalProperties": False}
 STR = {"type": "string"}
 TOOLS = {
@@ -240,6 +276,8 @@ TOOLS = {
                             schema={**S(rejection_id=STR, jurisdiction={"type": "string", "enum": ["IN", "US"]}), "required": ["rejection_id", "jurisdiction"]}),
     "deadline_clock": dict(fn=deadline_clock, desc="Deadlines triggered by the remedy rules, as dates from the rejection date and projected from a filing date.",
                            schema={**S(rejection_id=STR, as_of=STR, filing_date=STR), "required": ["rejection_id"]}),
+    "precedent_lookup": dict(fn=precedent_lookup, desc="REAL, PUBLIC, PAST decisions (Indian Insurance Ombudsman awards 2009-2012; California DMHC Independent Medical Reviews 2024-2026) analogous to the clause a rejection relies on, via Precedent -> Clause -> Rule traversal. Context only; not a prediction.",
+                             schema={**S(case_id=STR, clause_id=STR, limit={"type": "integer", "minimum": 1, "maximum": 12}), "required": ["case_id"]}),
     "rule_catalog": dict(fn=rule_catalog, desc="List the rules in the graph with citation, source URL and verification note.",
                          schema=S(jurisdiction={"type": "string", "enum": ["IN", "US"]})),
 }

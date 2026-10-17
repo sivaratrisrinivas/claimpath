@@ -60,6 +60,12 @@ def seed(db=None):
       {"rows": [dict(j=j, r=r) for j, r in data.APPEAL_VIA]})
     q("UNWIND $rows AS r MATCH (x:Rule {id:r.rule}) CREATE (x)-[:HAS_DEADLINE]->(:Deadline {id:r.id, ord:r.ord, label:r.label, amount:r.amount, "
       "unit:r.unit, anchor:r.anchor, kind:r.kind})", {"rows": data.DEADLINES})
+    q("UNWIND $rows AS r CREATE (:Precedent {id:r.id, jurisdiction:r.jurisdiction, source_kind:r.source_kind, case_ref:r.case_ref, forum:r.forum, "
+      "year:r.year, claim_type:r.claim_type, amount:r.amount, currency:r.currency, clause_ref:r.clause_ref, reason:r.reason, outcome:r.outcome, "
+      "outcome_class:r.outcome_class, excerpt:r.excerpt, source_url:r.source_url, source_note:r.source_note, pre_current_rules:r.pre_current_rules})",
+      {"rows": data.PRECEDENTS})
+    q("UNWIND $rows AS r MATCH (p:Precedent {id:r.id}), (cl:Clause {id:r.clause_id}) CREATE (p)-[:ANALOGOUS_TO]->(cl)", {"rows": data.PRECEDENTS})
+    q("MATCH (p:Precedent)-[:ANALOGOUS_TO]->(:Clause)-[:LIMITED_BY]->(r:Rule) MERGE (p)-[:BEARS_ON]->(r)")
     q("CREATE (:Meta {id:'rev', rev:$rev})", {"rev": data.REV})  # written last: marks a complete seed
     return g.query("MATCH (n) RETURN count(n)").result_set[0][0]
 

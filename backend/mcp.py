@@ -24,7 +24,7 @@ def handle(msg, runner):
     if method == "initialize":
         return ok({"protocolVersion": PROTOCOL, "capabilities": {"tools": {"listChanged": False}},
                    "serverInfo": {"name": "claimpath", "version": "0.1.0"},
-                   "instructions": "Graph tools over a FalkorDB claim-rejection knowledge graph. Sample data is synthetic. Not legal advice."})
+                   "instructions": "Graph tools over a FalkorDB claim-rejection knowledge graph. The two sample cases are synthetic; precedents are REAL public past decisions (India Ombudsman 2009-2012, California IMR 2024-2026). Not legal advice."})
     if method == "ping":
         return ok({})
     if method == "tools/list":

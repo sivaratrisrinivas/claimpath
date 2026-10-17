@@ -1,7 +1,7 @@
 """ClaimPath seed data. EVERYTHING about the two sample cases is SYNTHETIC (invented people, insurers, numbers).
 The RULES are real: each has a source_url to the official text it was read from, plus a `verification` note."""
 
-REV = 3  # bump when the data changes: the app re-seeds on cold start when the stored revision differs
+REV = 4  # bump when the data changes: the app re-seeds on cold start when the stored revision differs
 
 IRDAI_MC = ("https://irdai.gov.in/documents/37343/365525/%e0%a4%b8%e0%a5%8d%e0%a4%b5%e0%a4%be%e0%a4%b8%e0%a5%8d%e0%a4%a5%e0%a5%8d%e0%a4%af+"
             "%e0%a4%ac%e0%a5%80%e0%a4%ae%e0%a4%be+%e0%a4%b5%e0%a5%8d%e0%a4%af%e0%a4%b5%e0%a4%b8%e0%a4%be%e0%a4%af+%e0%a4%aa%e0%a4%b0+"
@@ -191,3 +191,16 @@ DEADLINES = [
     dict(id="D-US-3", rule="R-US-EXT", ord=3, label="Request external review (4 months after the final internal denial)", amount=4, unit="months", anchor="final_determination", kind="you_must"),
     dict(id="D-US-4", rule="R-US-EXT", ord=4, label="Independent reviewer should decide (standard review)", amount=45, unit="days", anchor="external_request", kind="they_must"),
 ]
+
+
+# ---- Precedents: REAL, PUBLIC, PAST decisions (built by scripts/build_precedents.py; see README for sources and caveats).
+# They never feed the live verdict (that stays driven by the synthetic cases + real rules); they are context shown after the agent runs.
+import json as _json, os as _os
+_P = _json.load(open(_os.path.join(_os.path.dirname(__file__), "precedents.json"), encoding="utf8"))
+PRECEDENTS = []
+for _x in _P["india"] + _P["us"]:
+    _won = ("succeeded" in _x["outcome"]) or ("overturned" in _x["outcome"])
+    PRECEDENTS.append(dict(id=_x["id"], jurisdiction=_x["jurisdiction"], source_kind=_x["source_kind"], case_ref=_x["case_ref"], forum=_x["forum"],
+                           year=_x["year"], claim_type=_x["claim_type"], amount=_x["amount"], currency=_x["currency"], clause_id=_x["clause_id"],
+                           clause_ref=_x.get("clause_ref", ""), reason=_x["reason"], outcome=_x["outcome"], outcome_class="claimant" if _won else "insurer",
+                           excerpt=_x["excerpt"], source_url=_x["source_url"], source_note=_x["source_note"], pre_current_rules=bool(_x["pre_current_rules"])))

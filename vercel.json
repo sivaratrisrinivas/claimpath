@@ -1,1 +1,1 @@
-{ "functions": { "index.py": { "includeFiles": "frontend/**", "maxDuration": 30 } } }
+{ "functions": { "index.py": { "includeFiles": "{frontend,backend}/**", "maxDuration": 30 } } }

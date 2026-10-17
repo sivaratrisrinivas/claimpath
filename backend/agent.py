@@ -54,12 +54,14 @@ def analyze(case_id, assume, text, today, runner):
     bill = step("reconcile_bill", "Reconcile the hospital bill / EOB against the policy.", {"case_id": case_id})
     esc = step("escalation_path", "Find the shortest route from this rejection to the final free forum.", {"rejection_id": cs["rejection"]["id"], "jurisdiction": country})
     clock = step("deadline_clock", "Compute the deadlines the remedy rules start.", {"rejection_id": cs["rejection"]["id"], "as_of": today})
+    prec = step("precedent_lookup", "Find REAL past decisions (Ombudsman awards / California IMRs) analogous to this clause. Context only: it does not change the verdict.",
+                {"case_id": case_id, "clause_id": clause["id"], "limit": 6})
     assumed = [f["label"] for c in cands for f in c["facts"] if f["assumed"]]
     assumed = sorted(set(assumed))
     verdict = _verdict(country, cands, mf["missing"], assumed)
     strongest = next((c for c in cands if c["id"] == verdict["rule_id"]), cands[0] if cands else None)
     result = dict(case=cs["case"], policy=cs["policy"], reason=reason, clause=clause, rejection=cs["rejection"], strongest=strongest, candidates=cands,
-                  missing=mf["missing"], bill=bill, escalation=esc, clock=clock, verdict=verdict, assume=assume, assumed_labels=assumed, today=today)
+                  missing=mf["missing"], bill=bill, escalation=esc, clock=clock, precedents=prec, verdict=verdict, assume=assume, assumed_labels=assumed, today=today)
     from letter import build
     letter = build(result)
     trace.append({"tool": "draft_letter", "args": {"case_id": case_id, "assume": assume}, "cypher": [], "ms": 0,
