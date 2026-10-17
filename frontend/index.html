@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClaimPath - Claim Rejection Case File</title>
+<meta name="description" content="Pick a sample health-insurance rejection. An agent walks a FalkorDB graph and shows the traceable path from the insurer's reason to the rule that may defeat it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2712%27 fill=%27%230f5e5a%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="6" cy="16" r="3.2" fill="#0f5e5a"/><circle cx="16" cy="8" r="3.2" fill="#0f5e5a" opacity=".55"/><circle cx="16" cy="24" r="3.2" fill="#0f5e5a" opacity=".55"/><circle cx="26" cy="16" r="3.2" fill="#0f5e5a"/><path d="M8.7 14.6 13.4 9.6M8.7 17.4l4.7 5M18.7 9.6l4.6 4.8M18.7 22.4l4.6-4.8" stroke="#0f5e5a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+    <div><b>ClaimPath</b><span>Claim Rejection Case File</span></div>
+  </div>
+  <nav><a href="https://github.com/sivaratrisrinivas/claimpath" target="_blank" rel="noopener">GitHub</a><a href="#" id="mcp-link">MCP endpoint</a></nav>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>A rejection letter is written to end the conversation.</h1>
+    <p>Most people accept it. But the rules are often on their side, just scattered across circulars nobody reads. Pick a sample case and watch an agent walk a graph from the insurer's reason to the rule that may defeat it, citing a source at every step.</p>
+    <div class="notice"><b>Sample data is synthetic.</b> Rules are real and linked to official text. Not legal or medical advice. ClaimPath never files anything or contacts anyone.</div>
+  </section>
+
+  <section class="pick" aria-label="Choose a sample case">
+    <div class="cases" id="cases"></div>
+    <details class="paste"><summary>Or paste the insurer's rejection reason</summary>
+      <textarea id="paste" rows="3" placeholder="e.g. Claim repudiated: not medically necessary under our clinical criteria  /  cosmetic procedure excluded"></textarea>
+      <small>The agent matches your text to a clause of the selected sample policy. Nothing is stored.</small>
+    </details>
+    <button id="run" class="primary">Run the agent</button>
+  </section>
+
+  <section id="out" class="out hidden">
+    <aside class="trace" id="trace-panel">
+      <h2>Agent trace <small>every graph tool call, with its Cypher</small></h2>
+      <ol id="trace"></ol>
+    </aside>
+    <div class="main">
+      <div id="verdict" class="card verdict"></div>
+      <div class="card"><h2>The traceable path</h2><ol id="path" class="path"></ol></div>
+      <div class="card"><h2>Deadline clock <small id="clock-sub"></small></h2><ul id="clock" class="clock"></ul></div>
+      <div class="card" id="bill-card"><h2>Bill vs policy <small>reconciliation</small></h2><div id="bill"></div></div>
+      <div class="card"><h2>Draft letter <small>for you to review and send yourself</small></h2>
+        <div class="letter-actions"><button id="copy" class="ghost">Copy text</button><button id="dl" class="ghost">Download .txt</button></div>
+        <pre id="letter"></pre></div>
+    </div>
+  </section>
+</main>
+<footer>Built for the FalkorDB Graph Hacks, Track 1. Graph: FalkorDB. Sample cases are synthetic. Not legal or medical advice.</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
