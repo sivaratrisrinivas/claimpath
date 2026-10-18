@@ -11,6 +11,30 @@ A rejection letter is written to end the conversation. It is short, confident, a
 
 The frustrating part: the rules are often on the policyholder's side. India's regulator says that after 60 months of continuous cover a claim cannot be contested for non-disclosure. US federal rules say emergency services cannot require prior authorization. But those rules are scattered across circulars and CFR sections nobody reads, and the insurer's letter never mentions them.
 
+## How it works at a glance
+
+```mermaid
+flowchart LR
+  U["1. You, in the browser<br/>rejection letter page:<br/>pick a letter, drag a document onto it"]
+  API["2. FastAPI backend on Vercel<br/>POST /api/analyze"]
+  AG["3. Agent (rule-based, no LLM)<br/>picks which tools to run<br/>and logs every call as a trace"]
+  subgraph G["4. FalkorDB Cloud graph (the only database)"]
+    direction TB
+    T["Tools = live Cypher queries:<br/>clause lookup, strongest rule path,<br/>PageRank over rules, shortestPath escalation,<br/>deadline clock, precedent lookup"]
+    N["Facts stored as nodes and links:<br/>Policy, Clause, Rejection, Evidence,<br/>Rule, Deadline, Precedent"]
+    T --> N
+  end
+  OUT["5. Back to the page:<br/>verdict + cited path + deadlines<br/>+ draft reply + the trace"]
+  MCP["/mcp endpoint:<br/>same tools for other agents"]
+  O["Other AI agents"]
+
+  U --> API --> AG --> T
+  AG --> OUT --> U
+  O --> MCP --> T
+```
+
+In plain words: you drop in a rejection letter, the backend asks an agent to check it, and the agent answers only by querying a graph of facts in FalkorDB (which clause was cited, which rules limit it, what evidence you have, what the deadlines are, what similar past cases decided). What comes back is a verdict with the chain of facts behind it, the deadlines and a draft reply. The same graph tools are also exposed at `/mcp`, so other agents can use them directly.
+
 ## Why this problem is real
 
 | Claim | Source | Status |
