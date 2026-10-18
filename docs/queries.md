@@ -72,3 +72,14 @@ Sample Cypher per tool (trimmed from `backend/tools.py`; every call's real query
 | `deadline_clock` | `MATCH (j:Rejection {id:$rid})-[:APPEAL_VIA]->(r0:Rule)-[:RELATES*0..3]->(r:Rule)-[:HAS_DEADLINE]->(d:Deadline) RETURN DISTINCT d.label, d.amount, d.unit, d.anchor ORDER BY d.ord` |
 | `precedent_lookup` | `MATCH (p:Precedent {outcome_class:$oc})-[:ANALOGOUS_TO]->(:Clause {id:$clid}) RETURN p.id, p.year, p.outcome_class ORDER BY p.year DESC LIMIT $n` plus `MATCH (:Clause {id:$clid})-[:LIMITED_BY]->(r:Rule)<-[:BEARS_ON]-(p:Precedent) ...` for precedents that share a rule |
 | `rule_catalog` | `MATCH (r:Rule) WHERE $j IS NULL OR r.jurisdiction = $j RETURN r.id, r.name, r.citation, r.source_url, r.verification ORDER BY r.id` |
+
+## Graph map notes
+
+Ten labels and thirteen relationship types in total. `Meta` is a bookkeeping node holding the seed revision. Every call's real query, parameters, row count and latency is shown in the app under "show my working".
+
+`precedent_lookup` key query (moved from the README):
+
+```cypher
+MATCH (:Clause {id:$clid})-[:LIMITED_BY]->(r:Rule)<-[:BEARS_ON]-(p:Precedent)-[:ANALOGOUS_TO]->(c2:Clause)
+WHERE c2.id <> $clid RETURN p.id, p.year, p.outcome_class
+```

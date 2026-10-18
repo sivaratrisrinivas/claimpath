@@ -21,3 +21,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/
 ```
 
 Hosted: set `FALKORDB_HOST`, `FALKORDB_PORT`, `FALKORDB_USERNAME`, `FALKORDB_PASSWORD` (and `FALKORDB_SSL=1` if TLS). On cold start the graph is seeded idempotently with batched `UNWIND` writes, guarded by a lock *graph* (a hosted FalkorDB user may not be allowed raw `SET`), and one connection is reused across requests. The deployed instance is FalkorDB Cloud.
+
+## Notes on reuse and the Meta node
+
+The project reuses only generic infrastructure patterns: FastAPI, one reused database connection, and seeding guarded by a lock graph (a hosted FalkorDB user may not be allowed raw `SET`). The `Meta` node holds the seed revision so cold starts only reseed when the data changed.
