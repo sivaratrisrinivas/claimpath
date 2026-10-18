@@ -29,6 +29,46 @@ These numbers show that rejected claims are common and rarely contested; they do
 
 **Track 1: Agents That Act on Connected Data (FalkorDB Graph Hacks).** The agent's tools are live Cypher queries over a FalkorDB graph (every call is logged with its query), the same tools are exposed over `/mcp`, and the verdict is computed from the graph and carries a source link on every rule it cites.
 
+## Graph map
+
+Everything the agent says comes from Cypher over this schema in FalkorDB (ten labels, thirteen relationship types).
+
+```mermaid
+graph LR
+  Case -->|HAS_POLICY| Policy
+  Policy -->|HAS_CLAUSE| Clause
+  Case -->|HAS_REJECTION| Rejection
+  Rejection -->|CITES| Clause
+  Case -->|HAS_EVIDENCE| Evidence
+  Clause -->|LIMITED_BY| Rule
+  Rule -->|REQUIRES| FactType
+  Evidence -->|PROVES| FactType
+  Rule -->|RELATES| Rule
+  Rejection -->|APPEAL_VIA| Rule
+  Rule -->|HAS_DEADLINE| Deadline
+  Precedent -->|ANALOGOUS_TO| Clause
+  Precedent -->|BEARS_ON| Rule
+```
+
+Node labels: `Case`, `Policy`, `Clause`, `Rejection`, `Evidence`, `Rule`, `FactType`, `Deadline`, `Precedent`, plus a `Meta` node holding the seed revision.
+
+Relationship types: `HAS_POLICY`, `HAS_CLAUSE`, `HAS_REJECTION`, `CITES`, `HAS_EVIDENCE`, `LIMITED_BY`, `REQUIRES`, `PROVES`, `RELATES`, `APPEAL_VIA`, `HAS_DEADLINE`, `ANALOGOUS_TO`, `BEARS_ON`.
+
+One sample Cypher per tool (trimmed from `backend/tools.py`; every call's real query, params, row count and latency is shown in the app under "show my working"):
+
+| Tool | Sample Cypher |
+|---|---|
+| `get_case` | `MATCH (c:Case {id:$cid})-[:HAS_POLICY]->(p:Policy) MATCH (c)-[:HAS_REJECTION]->(j:Rejection)-[:CITES]->(cl:Clause) RETURN c.id, p.insurer, j.reason, cl.no, cl.text` |
+| `match_reason` | `MATCH (:Case {id:$cid})-[:HAS_POLICY]->(:Policy)-[:HAS_CLAUSE]->(cl:Clause) RETURN cl.id, cl.no, cl.text, cl.keywords` (keywords scored against the pasted text) |
+| `rule_centrality` | `CALL algo.pageRank('Rule','RELATES') YIELD node, score WHERE node.jurisdiction = $j RETURN node.id, node.name, score ORDER BY score DESC` |
+| `strongest_rule_path` | `MATCH (cl:Clause {id:$clid}) OPTIONAL MATCH (cl)-[lb:LIMITED_BY]->(r:Rule) OPTIONAL MATCH (r)-[rq:REQUIRES]->(ft:FactType) OPTIONAL MATCH (ev:Evidence {case_id:$cid})-[pv:PROVES]->(ft) RETURN r.id, r.effect, ft.key, ev.id` |
+| `missing_facts` | `MATCH (:Clause {id:$clid})-[:LIMITED_BY]->(r:Rule)-[rq:REQUIRES]->(ft:FactType) OPTIONAL MATCH (ev:Evidence {case_id:$cid})-[:PROVES]->(ft) WITH r, rq, ft, ev WHERE ev IS NULL AND r.effect = 'bars' RETURN DISTINCT ft.key, ft.how_to_find` |
+| `reconcile_bill` | `MATCH (c:Case {id:$cid})-[:HAS_EVIDENCE]->(b:Evidence {kind:'bill_line'}) RETURN b.label, b.amount, b.payable, b.paid ORDER BY b.seq` |
+| `escalation_path` | `MATCH (j:Rejection {id:$rid}), (t:Rule {terminal:true, jurisdiction:$j}) WITH shortestPath((j)-[:APPEAL_VIA\|RELATES*..6]->(t)) AS p RETURN [n IN nodes(p) \| n.id], length(p)` |
+| `deadline_clock` | `MATCH (j:Rejection {id:$rid})-[:APPEAL_VIA]->(r0:Rule)-[:RELATES*0..3]->(r:Rule)-[:HAS_DEADLINE]->(d:Deadline) RETURN DISTINCT d.label, d.amount, d.unit, d.anchor ORDER BY d.ord` |
+| `precedent_lookup` | `MATCH (p:Precedent {outcome_class:$oc})-[:ANALOGOUS_TO]->(:Clause {id:$clid}) RETURN p.id, p.year, p.outcome_class ORDER BY p.year DESC LIMIT $n` plus `MATCH (:Clause {id:$clid})-[:LIMITED_BY]->(r:Rule)<-[:BEARS_ON]-(p:Precedent) ...` for precedents that share a rule |
+| `rule_catalog` | `MATCH (r:Rule) WHERE $j IS NULL OR r.jurisdiction = $j RETURN r.id, r.name, r.citation, r.source_url, r.verification ORDER BY r.id` |
+
 ## What
 
 ClaimPath takes one rejection and shows **one traceable path**, with a source link at every step:
